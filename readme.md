@@ -25,69 +25,121 @@ Examples:
 
     ##[ .options comment-start=##[ comment-end=]## ]##
     
-    ##[ var var-type var-name = resource-uri ]##
     ##[ var var-actions = resource-uri ]##
     ##[ var var-obj = resource-uri ]##
     
-    ##[ echo some-text ]##
+    ##[ echo some text ]##
     ##[ echo-end ]##
 
     ##[ echo line one {{ var-name }} {{ var-obj:key0 }} ]##
-    ##[ echo More lines {{ var-obj:key-of-var:key-of-key-of-var | var-actions:action0 | var-actions:action2 }} ]##
-    ##[ echo Multiple variables to action {{ var-obj:key1 var-obj:key2 var-obj:key3 | var-actions:action3 }} ]##
+    ##[ echo More lines ]##
     ##[ echo-end ]##
 
-All template statements should be written inside one line. Don't use like:
+Some rules:
+
+1. All lines with template statements must be wrapped by comment start/end marks.
+1. All template statements should be written inside one line.
+
+Don't use like:
 
     /* .options comment-start=/* comment-end=*/ /**/
     /* var a = xxx.txt */ 'Some real content...';
 
-### In File Options
+### Tokens
 
-`.options name=value name1=value1`
+* comment start/end marks
+* variable start/end marks
+* `var`
+* `echo`
+* `.options`
 
-1. Within one line.
-1. Start with `.options`.
-1. Characters allowed in name are: `a-z` `A-Z` `0-9` `_` `.` `-`, no blanks.
-1. Characters between `.options` and first name is separator, can be customized.
-1. All characters allowed in separator but characters in name.
-1. No blanks around name and `=`.
+### var statement
 
-`.options -`
+Var statement define variables.
 
-* Write like this in front to prevent conflicting content.
+    ##[ var var-type var-name = resource-uri ]##
 
-### Built-in Options
+Variable value comes from local file or http/https url.\
+Var-Type tells how to parse resource.
 
-* `comment-start` Default: `//`
-* `comment-end` Default: (empty string)
-* `var-start` Default: `{{`
-* `var-end` Default: `}}`
+### echo statements
+
+Echo statements print lines with variables.
+
+    ##[ echo line]##
+    ##[ echo ]##
+    ##[ echo line after an empty line]##
+    Real content will be written from here,
+    util "echo-end".
+    ##[ echo-end ]##
+
+Some rules:
+
+1. Blank character after `echo` is required.
+1. No empty lines between `##[ echo ]##` lines.
+
+In this case, `##[ echo a line]##` will be ignored:
+
+    ##[ echo a line]##
+
+    ##[ echo another line]##
+    ##[ echo-end ]##
 
 ### Variables
 
-1. Characters allowed in name are same as options name.
+Variables in echo statements will be replace by their values.\
+Variables are wrapped by variable marks.
+
+    ##[ echo line one {{ var-name }} {{ obj:key0 }} ]##
+    ##[ echo More lines {{ obj:key-of-obj:key-of-key-of-obj | actions:action0 | actions:action1 }} ]##
+    ##[ echo Multiple variables to action {{ obj:key1 obj:key2 obj:key3 | actions:action2 }} ]##
+    ##[ echo-end ]##
+
+Some rules:
+
+1. Characters allowed in name are: `a-z` `A-Z` `0-9` `_` `.` `-`, no blanks.
 1. Use `:` to get property of variable, NOT `.`, because `.` is allowed in name.
 1. No blanks around `:`.
-1. Use `|` to call actions (function), similar as piping in Linux.
+1. Use `|` to call actions (functions), similar as piping in Linux.
 1. Multiple variables allowed before *first* `|`.
 1. If variable before first `|` is a function, it will be executed and pass return to next action.
 1. Default action is `print`, means `.toString()`.
 1. Type of first action: `(options: ActionOptions, ...inputs: any[]) => string`.
 1. Type of other actions: `(options: ActionOptions, input: string) => string`.
 
-#### Action-Options
+### options statement
 
-* `indent` Blanks in front of line.
-* `lineBreaks` Line breaks characters.
+    ##[ .options name=value name1=value1 ]##
+    ##[ .options::name2=value2::other=::boolean-option]##
 
-#### Var-Type
+1. Characters allowed in name are same as variable name.
+1. Characters between `.options` and first name is separator, can be customized.
+1. All characters allowed in separator but characters in name.
+1. No blanks around name and `=`.
+1. If an option has not `=` after it's name, it is a boolean option, and assigned with `true`.
 
-* `list` Return array of strings.
+## Details
+
+### Resource URI
+
+* `http` or `https` url.
+* Local file path (related to current file path).
+
+### Local File Resource Name
+
+File name rule: `var-type.file-name.file-type`.
+
+### Var-Type
+
+* `list` Parse plain text, return array of echo line.
 * `json` Using `JSON.parse()`.
 * `text` Return plain text.
 * `pack` Return Node.js module.
 * `get`  Execute function and using it's return.
+
+`http`/`https` resources use `text` by default, and `pack`/`get` is not available.\
+For Local file resource, all types are available.
+If var-type not declared, get var-type from file name, otherwise use `text`.
 
 #### Pack Type
 
@@ -108,21 +160,28 @@ Using context in action:
 
 Processing Logic:
 
-1. If var-type declared, get resource and assigns to result, var-type will be removed from name.
-1. Context of actions in exports is bind to parsed result.
+1. If var-type declared, load resource and assigns to result, var-type will be removed from name.
+1. Context of actions is bind to parsed result.
 1. `get` type will be executed at last, means result context is available.
 
 Check `demo/pack.*.js` for examples.
 
-#### Built-in Actions
+### ActionOptions
+
+* `indent` Blanks in front of line.
+* `lineBreaks` Line breaks characters.
+
+### Built-in Actions
 
 * `json` Output using `JSON.stringify()`.
 
-## Resource URI
+### Built-in Options
 
-* `http` or `https` url.
-* Local file path (related to current file path).
+* `comment-start` Default: `//`.
+* `comment-end` Default: (empty string).
+* `var-start` Default: `{{`.
+* `var-end` Default: `}}`.
 
-## Local File Resource Name
+#### Other Options
 
-File name rule: `var-type.file-name.file-type`.
+* `output` Path of output file. 
