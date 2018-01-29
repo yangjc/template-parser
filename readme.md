@@ -2,11 +2,22 @@
 
 A template parser for any type of file.
 
-Use the template language in contents of file which can be ignored.
-Update a file, replace all variables.
-Template statements will be kept if update file itself, but will be deleted if output to another file.
+Write the template statements in contents where can be ignored.\
+Template parser will replace all variables.\
+Template statements will be kept if updating file itself, but will be deleted if writing to another file.
 
-All options can be written inside file.
+All options, like comment start/end marks, or variable start/end marks, can be customized.
+
+## Install
+
+    npm i @yjc/template-parser
+    cd @yjc/template-parser && npm run-script build
+
+## Usage
+
+In CLI:
+
+    npm run-script parse file-path [--comment-start=] [--comment-end=] [--var-start=] [--var-end=] [--output=]
 
 ## Template Language Syntax
 
@@ -29,7 +40,7 @@ Examples:
 All template statements should be written inside one line. Don't use like:
 
     /* .options comment-start=/* comment-end=*/ /**/
-    /* var a = xxx.txt */ 'Some real content...'
+    /* var a = xxx.txt */ 'Some real content...';
 
 ### In File Options
 
@@ -44,12 +55,12 @@ All template statements should be written inside one line. Don't use like:
 
 `.options -`
 
-1. Write this in front to override conflicted content.
+* Write like this in front to prevent conflicting content.
 
 ### Built-in Options
 
 * `comment-start` Default: `//`
-* `comment-end` Default: ``(Blank)
+* `comment-end` Default: (empty string)
 * `var-start` Default: `{{`
 * `var-end` Default: `}}`
 
@@ -60,7 +71,7 @@ All template statements should be written inside one line. Don't use like:
 1. No blanks around `:`.
 1. Use `|` to call actions (function), similar as piping in Linux.
 1. Multiple variables allowed before *first* `|`.
-1. If variable before first `|` is a function, it will be executed and pass return to action.
+1. If variable before first `|` is a function, it will be executed and pass return to next action.
 1. Default action is `print`, means `.toString()`.
 1. Type of first action: `(options: ActionOptions, ...inputs: any[]) => string`.
 1. Type of other actions: `(options: ActionOptions, input: string) => string`.

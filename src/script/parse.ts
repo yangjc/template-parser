@@ -14,7 +14,7 @@ import { TemplateParser, Options } from '../lib/TemplateParser';
     if (!file) {
         return console.log(
             `Usage
-    node file-self-update.js file-path [--%s=] [--%s=] [--%s=] [--%s=] [--%s=]`,
+    node parse.js file-path [--%s=] [--%s=] [--%s=] [--%s=] [--%s=]`,
             'comment-start',
             'comment-end',
             'var-start',

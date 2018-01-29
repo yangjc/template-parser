@@ -10,7 +10,8 @@
     "minimist": ""
   },
   "scripts": {
-    "build": "tsc -p src"
+    "build": "tsc -p src",
+    "parse": "node release/script/parse.js"
   },
   "main": "./release/main.js",
   "license": "MIT",
