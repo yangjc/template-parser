@@ -1,0 +1,5 @@
+# .options comment-start=/// comment-end=
+// echo content
+// echo-end
+
+// Not working: comment marks around options conflicted with declared options.

@@ -1,0 +1,28 @@
+##[ .options comment-start=##[ comment-end=]## ]##
+##[   .options output=test.output.txt ]##
+##[ var      t   = pack.test.js ]##
+
+##[ echo ]##
+##[ echo-end ]##
+##[ var      a   = pack.actions.js ]##
+##[ var json cb  = callback-data.js ]##
+##[ var      abc = list.abc.txt ]##
+##[ var      hw  = list.highways.txt ]##
+
+  ##[ echo Hosts List ]##
+  ##[ echo {{t:hosts |a:printList |a:addLineNumber}} ]##
+  ##[ echo-end ]##
+
+    ##[ echo source code: {{t:html}} ]##
+    ##[ echo-end ]##
+   
+   ##[ echo repository url: {{ t:package:repository:url }} ]##
+   ##[ echo NO blanks between colon! This will not print as expected: {{ t : package : repository : url }} ]##
+   ##[ echo using context: {{|t:showSth}} ]##
+   ##[ echo-end ]##
+  
+  ##[ echo {{cb}} ]##
+  ##[ echo-end ]##
+  
+ ##[ echo {{ abc  hw | a:likeLadder }} ]##
+ ##[ echo-end ]##
