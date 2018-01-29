@@ -37,8 +37,8 @@ Examples:
 
 Some rules:
 
-1. All lines with template statements must be wrapped by comment start/end marks.
-1. All template statements should be written inside one line.
+1. All lines with *template statements* must be wrapped by *comment start/end marks*.
+1. A *template statement* should be written inside one line, no real contents around.
 
 Don't use like:
 
@@ -47,15 +47,15 @@ Don't use like:
 
 ### Tokens
 
-* comment start/end marks
-* variable start/end marks
+* *comment start/end marks*
+* *variable start/end marks*
 * `var`
 * `echo`
 * `.options`
 
 ### var statement
 
-Var statement define variables.
+*Var statement* define variables.
 
     ##[ var var-type var-name = resource-uri ]##
 
@@ -64,7 +64,7 @@ Var-Type tells how to parse resource.
 
 ### echo statements
 
-Echo statements print lines with variables.
+*Echo statements* print lines with variables.
 
     ##[ echo line]##
     ##[ echo ]##
@@ -87,8 +87,8 @@ In this case, `##[ echo a line]##` will be ignored:
 
 ### Variables
 
-Variables in echo statements will be replace by their values.\
-Variables are wrapped by variable marks.
+Variables in *echo statements* will be replace by their values.\
+Variables are wrapped by *variable marks*.
 
     ##[ echo line one {{ var-name }} {{ obj:key0 }} ]##
     ##[ echo More lines {{ obj:key-of-obj:key-of-key-of-obj | actions:action0 | actions:action1 }} ]##
@@ -101,7 +101,7 @@ Some rules:
 1. Use `:` to get property of variable, NOT `.`, because `.` is allowed in name.
 1. No blanks around `:`.
 1. Use `|` to call actions (functions), similar as piping in Linux.
-1. Multiple variables allowed before *first* `|`.
+1. Multiple variables allowed before **first** `|`.
 1. If variable before first `|` is a function, it will be executed and pass return to next action.
 1. Default action is `print`, means `.toString()`.
 1. Type of first action: `(options: ActionOptions, ...inputs: any[]) => string`.
@@ -112,7 +112,7 @@ Some rules:
     ##[ .options name=value name1=value1 ]##
     ##[ .options::name2=value2::other=::boolean-option]##
 
-1. Characters allowed in name are same as variable name.
+1. Characters allowed in options name are same as variable name.
 1. Characters between `.options` and first name is separator, can be customized.
 1. All characters allowed in separator but characters in name.
 1. No blanks around name and `=`.
@@ -166,14 +166,14 @@ Processing Logic:
 
 Check `demo/pack.*.js` for examples.
 
+### Built-in Actions
+
+* `json` Output using `JSON.stringify()`.
+
 ### ActionOptions
 
 * `indent` Blanks in front of line.
 * `lineBreaks` Line breaks characters.
-
-### Built-in Actions
-
-* `json` Output using `JSON.stringify()`.
 
 ### Built-in Options
 
