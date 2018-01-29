@@ -2,11 +2,11 @@
 
 A template parser for any type of file.
 
-Write the template statements in contents where can be ignored.\
+Write the *template statements* in contents where can be ignored.\
 Template parser will replace all variables.\
-Template statements will be kept if updating file itself, but will be deleted if writing to another file.
+*Template statements* will be kept if updating file itself, but will be deleted if writing to another file.
 
-All options, like comment start/end marks, or variable start/end marks, can be customized.
+All options, like *comment start/end marks*, or *variable start/end marks*, can be customized.
 
 ## Install
 
