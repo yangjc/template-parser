@@ -1,5 +1,3 @@
-import { builtInActions } from "./PackAction";
-
 /**
  * YJC <yangjiecong@live.com>
  */
@@ -31,11 +29,11 @@ export const builtInOptions: BuiltInOptions = {
     'var-end': '}}',
 };
 
-export function escapeMark(mark: string): string {
-    if (/\s/.test(mark.replace(/[ \t]+/g, ''))) {
-        throw new Error(`Marks should not contain blank characters other than spaces and tabs.`);
+export function escapeDelimiter(delimiter: string): string {
+    if (/\s/.test(delimiter.replace(/[ \t]+/g, ''))) {
+        throw new Error(`Delimiters should not contain blank characters other than spaces and tabs.`);
     }
-    return mark.replace(/[\-[\]{}()*+?.,\\^$|#]/g, '\\$&');
+    return delimiter.replace(/[\-[\]{}()*+?.,\\^$|#]/g, '\\$&');
 }
 
 export function removeBlankTopLine(text: string): string {
@@ -69,20 +67,20 @@ export class InFileOptions {
 
     constructor(text: string, options?: BuiltInOptions) {
         this.setDefaults(options);
-        this.getMarks(text);
+        this.getDelimiters(text);
         if (this.hasInFileOptions) {
             this.getBlockRE();
             this.getOptions(text);
             if (this.options['comment-start'] !== this.commentStart
                 || this.options['comment-end'] !== this.commentEnd) {
-                throw new Error(`Options error, comment marks conflicted.`);
+                throw new Error(`Options error, comment delimiters conflicted.`);
             }
         }
     }
 
     private getBlockRE(): void {
-        const cStartREP: string = escapeMark(this.commentStart);
-        const cEndREP: string = escapeMark(this.commentEnd);
+        const cStartREP: string = escapeDelimiter(this.commentStart);
+        const cEndREP: string = escapeDelimiter(this.commentEnd);
         this.optionsREPattern = `(?:^|${lbREP})${blankREP}*${cStartREP}${blankREP}*`
             + `${optREP}([^${nameREC}${lbREC}]+)([^${lbREC}]+)${cEndREP}${blankREP}*(?=${lbREP}|$)`;
 
@@ -92,7 +90,7 @@ export class InFileOptions {
         );
     }
 
-    private getMarks(text: string): void {
+    private getDelimiters(text: string): void {
         this.commentStart = this.options['comment-start'];
         this.commentEnd = this.options['comment-end'];
 

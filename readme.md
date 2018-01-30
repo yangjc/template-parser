@@ -4,9 +4,9 @@ A template parser for any type of file.
 
 Write the *template statements* in contents where can be ignored.\
 Template parser will replace all variables.\
-*Template statements* will be kept if updating file itself, but will be deleted if writing to another file.
+*Template statements* will be kept if updating file itself, but will be removed if writing to another file.
 
-All options, like *comment start/end marks*, or *variable start/end marks*, can be customized.
+All options, like *comment delimiters*, or *variable delimiters*, can be customized.
 
 ## Install
 
@@ -23,72 +23,95 @@ In CLI:
 
 Examples:
 
-    ##[ .options comment-start=##[ comment-end=]## ]##
+    // var var-name = resource-uri
+    // var var-obj = resource-uri
     
-    ##[ var var-actions = resource-uri ]##
-    ##[ var var-obj = resource-uri ]##
-    
-    ##[ echo some text ]##
-    ##[ echo-end ]##
+    // echo some text
+    // echo-end
 
-    ##[ echo line one {{ var-name }} {{ var-obj:key0 }} ]##
-    ##[ echo More lines ]##
-    ##[ echo-end ]##
+    // echo line one {{ var-name }} {{ var-obj:key0 }}
+    // echo More lines
+    // echo-end
 
 Some rules:
 
-1. All lines with *template statements* must be wrapped by *comment start/end marks*.
+1. All lines with *template statements* must be wrapped by *comment delimiters*.
 1. A *template statement* should be written inside one line, no real contents around.
 
 Don't use like:
 
-    /* .options comment-start=/* comment-end=*/ /**/
-    /* var a = xxx.txt */ 'Some real content...';
+    'Some real content...'; // var a-var = resource-uri
+
+### Delimiters
+
+* *comment delimiters*
+    * *Start comment delimiter* including line break character (or beginning of content) in the head.
+    * *End comment delimiter* including line break character (or ending of content) at the tail.
+
+* *variable delimiters*
 
 ### Tokens
 
-* *comment start/end marks*
-* *variable start/end marks*
 * `var`
 * `echo`
+* `echo-end`
 * `.options`
+
+### Operators
+
+* `=` Assigning resource to a variable.
+* `:` Accessing property of a variable.
+* `|` Calling action (like piping).
+
+### Statements
+
+* *var statement*
+* *echo statement*
+* *echo-end statement*
+* *options statement*
 
 ### var statement
 
-*Var statement* define variables.
+*var statement* define variables.
+
+Notice, all examples below are using `##[` and `]##` as *comment delimiters*,
+in order to show the end of statements clearly.
 
     ##[ var var-type var-name = resource-uri ]##
 
 Variable value comes from local file or http/https url.\
-Var-Type tells how to parse resource.
+*Var-Type* tells how to parse resource. *Var-Type* is optional.
 
-### echo statements
+### echo statement, echo-end statement
 
-*Echo statements* print lines with variables.
+Continuous *echo statements* print lines with variables.\
+*echo-end statement* tells the end of replacement block.
 
     ##[ echo line]##
     ##[ echo ]##
     ##[ echo line after an empty line]##
     Real content will be written from here,
-    util "echo-end".
+    until "echo-end" statement.
+
     ##[ echo-end ]##
 
 Some rules:
 
 1. Blank character after `echo` is required.
-1. No empty lines between `##[ echo ]##` lines.
+1. No empty lines between *echo statements*.
 
-In this case, `##[ echo a line]##` will be ignored:
+In this case, "line 3" will be rewritten:
 
-    ##[ echo a line]##
+    ##[ echo line 1: echo statements beginning]##
+    ##[ echo line 2: OK, continuous echo statement]##
 
-    ##[ echo another line]##
+    ##[ echo line 3: this line will be rewritten]##
     ##[ echo-end ]##
 
 ### Variables
 
-Variables in *echo statements* will be replace by their values.\
-Variables are wrapped by *variable marks*.
+Variables in *echo statement* will be replace by their values.\
+Variables are wrapped by *variable delimiters*.
 
     ##[ echo line one {{ var-name }} {{ obj:key0 }} ]##
     ##[ echo More lines {{ obj:key-of-obj:key-of-key-of-obj | actions:action0 | actions:action1 }} ]##
@@ -102,10 +125,6 @@ Some rules:
 1. No blanks around `:`.
 1. Use `|` to call actions (functions), similar as piping in Linux.
 1. Multiple variables allowed before **first** `|`.
-1. If variable before first `|` is a function, it will be executed and pass return to next action.
-1. Default action is `print`, means `.toString()`.
-1. Type of first action: `(options: ActionOptions, ...inputs: any[]) => string`.
-1. Type of other actions: `(options: ActionOptions, input: string) => string`.
 
 ### options statement
 
@@ -137,13 +156,13 @@ File name rule: `var-type.file-name.file-type`.
 * `pack` Return Node.js module.
 * `get`  Execute function and using it's return.
 
-`http`/`https` resources use `text` by default, and `pack`/`get` is not available.\
+`http`/`https` resources using `text` by default, and `pack`/`get` is not available.\
 For Local file resource, all types are available.
-If var-type not declared, get var-type from file name, otherwise use `text`.
+If *var-type* not declared, get *var-type* from file name, otherwise use `text`.
 
 #### Pack Type
 
-Declare var-type:
+Declare *var-type*:
 
     exports[`${varType} ${varName}`] = "resource-uri";
 
@@ -160,17 +179,26 @@ Using context in action:
 
 Processing Logic:
 
-1. If var-type declared, load resource and assigns to result, var-type will be removed from name.
+1. If *var-type* declared, load resource and assigns to result, *var-type* will be removed from name.
 1. Context of actions is bind to parsed result.
 1. `get` type will be executed at last, means result context is available.
 
 Check `demo/pack.*.js` for examples.
 
-### Built-in Actions
+### Actions
 
+Some notice:
+
+1. If variable before first `|` is a function, it will be executed and using it's return.
+1. Type of first action: `(options: ActionOptions, ...inputs: any[]) => any`.
+1. Type of other actions: `(options: ActionOptions, input: any) => any`.
+
+#### Built-in Actions
+
+* `print` Default action, means `.toString()`.
 * `json` Output using `JSON.stringify()`.
 
-### ActionOptions
+#### ActionOptions
 
 * `indent` Blanks in front of line.
 * `lineBreaks` Line breaks characters.
@@ -182,6 +210,8 @@ Check `demo/pack.*.js` for examples.
 * `var-start` Default: `{{`.
 * `var-end` Default: `}}`.
 
-#### Other Options
+#### Optional Options
 
 * `output` Path of output file. 
+
+[comment]: <> ( https://en.wikipedia.org/wiki/Comparison_of_programming_languages_(syntax) )

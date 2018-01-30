@@ -1,5 +1,5 @@
 # .options comment-start=/// comment-end=
-// echo content
-// echo-end
+/// echo content
+/// echo-end
 
-// Not working: comment marks around options conflicted with declared options.
+/// Not working: comment delimiters around options conflicted with declared delimiters in options.

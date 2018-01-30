@@ -29,13 +29,15 @@ import { resolve, dirname } from 'path';
 import { promisify } from 'util';
 import { stat, readFile, writeFile } from 'fs';
 
-import { ResourceLoader, getResourceType, resourceTypes, varTypeRegExpPattern as rVType } from './ResourceLoader';
+import {
+    ResourceLoader, getResourceType, resourceTypes,
+    varTypeRegExpPattern as varTypeREP
+} from './ResourceLoader';
 import { PackAction, PackActionOptions, builtInActions, setIndent } from './PackAction';
 import {
-    BuiltInOptions, InFileOptions, escapeMark, removeBlankTopLine, isNotStartWithLB,
+    BuiltInOptions, InFileOptions, escapeDelimiter, removeBlankTopLine, isNotStartWithLB,
     nameRegExpChars as nameREC, lineBreaksRegExpChars as lbREC,
-    blankRegExpPattern as blankREP, lineBreaksRegExpPattern as lbREP,
-    optionsRegExpPattern as optREP
+    blankRegExpPattern as blankREP, lineBreaksRegExpPattern as lbREP, optionsRegExpPattern as optREP
 } from './InFileOptions';
 import { requireSync } from '../external/Require';
 
@@ -118,14 +120,14 @@ export class TemplateParser {
     }
 
     private getPlaceholder(index: number): string {
-        return `-=~self-updating:${this.placeholderSign}#${index}~=-`;
+        return `~~~t-p-updating:${this.placeholderSign}#${index}~~~`;
     }
 
     private getVarRE(): RegExp {
         // var var-type var-name = uri
         return new RegExp(
             `(?:^|${lbREP})${blankREP}*${this.cStartREP}${blankREP}*`
-            + `var${blankREP}+(?:(${rVType})${blankREP}+)?([${nameREC}]+)${blankREP}*=([^${lbREC}]+)`
+            + `var${blankREP}+(?:(${varTypeREP})${blankREP}+)?([${nameREC}]+)${blankREP}*=([^${lbREC}]+)`
             + `${this.cEndREP}${blankREP}*(?=${lbREP}|$)`,
             'g'
         );
@@ -229,12 +231,14 @@ export class TemplateParser {
                 const action: any = builtInActions.hasOwnProperty(actionName)
                     ? builtInActions[actionName]
                     : this.readVar(actionName);
+
                 if (typeof action === 'function') {
                     if (isFirst) {
-                        value = await <PackAction>action(options, ...inputs);
+                        value = await (<PackAction>action)(options, ...inputs);
                     } else {
-                        value = await <PackAction>action(options, value);
+                        value = await (<PackAction>action)(options, value);
                     }
+                    
                 } else {
                     throw new Error(`Action "${actionName}" using in "${item.text}" should be function.`);
                 }
@@ -274,7 +278,7 @@ export class TemplateParser {
             const index: number = this.info.echo.length;
             const echoInfo: EchoBlockInfo = {
                 lines: 0,
-                vars: []
+                vars: [],
             };
             this.info.echo.push(echoInfo);
             this.echoOptions.push({
@@ -303,10 +307,10 @@ export class TemplateParser {
         this.inFileOptions = new InFileOptions(this.content, this.options);
         Object.assign(this.options, this.inFileOptions.options);
 
-        this.cStartREP = escapeMark(this.options['comment-start']);
-        this.cEndREP = escapeMark(this.options['comment-end']);
-        this.vStartREP = escapeMark(this.options['var-start']);
-        this.vEndREP = escapeMark(this.options['var-end']);
+        this.cStartREP = escapeDelimiter(this.options['comment-start']);
+        this.cEndREP = escapeDelimiter(this.options['comment-end']);
+        this.vStartREP = escapeDelimiter(this.options['var-start']);
+        this.vEndREP = escapeDelimiter(this.options['var-end']);
     }
 
     private async statFilePath(): Promise<void> {
@@ -343,7 +347,7 @@ export class TemplateParser {
 
     }
 
-    private removeMarkStatements(): void {
+    private removeTemplateStatements(): void {
         this.content = this.inFileOptions.removeOptions(this.content);
 
         let m: any;
@@ -365,19 +369,20 @@ export class TemplateParser {
         await this.statFilePath();
         this.content = await promisify(readFile)(this.filePath, 'utf8');
         this.getOptions();
-        // console.log(this.content);
+        
         await this.getOutputFilePath();
         await this.getVars();
         await this.updateEcho();
         await this.updateVarsReplacements();
+
         let output: string;
         if (this.outputFilePath) {
-            this.removeMarkStatements();
+            this.removeTemplateStatements();
             output = this.outputFilePath;
         } else {
             output = this.filePath;
         }
-        // console.log(this.vars, this.varsFrom);
+        
         await promisify(writeFile)(output, this.content, 'utf8');
         return output;
     }
