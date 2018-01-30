@@ -1,0 +1,11 @@
+// var a   = ../resources/pack.actions.js
+// var abc = ../resources/list.abc.txt
+// var hw  = ../resources/list.highways.txt
+
+Title of Content
+
+A Text Ladder:
+    // echo {{ abc hw | a:likeLadder }}
+    // echo-end
+
+Foot of content.

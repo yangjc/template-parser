@@ -2,27 +2,6 @@
  * YJC <yangjiecong@live.com>
  */
 
-/* Example
-
-// .options comment-start=// comment-end=
-// .options var-start={{ var-end=}}
-
-// var list a = http://
-// var b = ./list.xxx.txt
-// var c = ./pack.xxx.js
-// var text d = http://
-// var json e = http://
-// var x = ./pack.xxx.js
-
-// echo one value {{a}} {{c:varName}}
-// echo use one action {{b|x:bAction}}
-// echo multiple values to one action {{a b c:valueName|x:outAction}}
-// echo multiple values to actions chain {{a b|x:outAction|x:mAction}}
-// echo {{a b}} same as {{a}}{{b}}
-// echo-end
-
- */
-
 'use strict';
 
 import { resolve, dirname } from 'path';

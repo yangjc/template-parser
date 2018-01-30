@@ -1,8 +1,8 @@
 /* .options comment-start=/* comment-end=*/ /**/
 /* .options var-start=<{ var-end=}> */
-/* .options output=test.output.js */
+/* .options output=sample-bad-cases.output.js */
 /* var a-var = resource-uri */ 'Some real content...';
-/* var json b-var = callback-data.js */
+/* var json b-var = ../resources/callback-data.js */
 /*echo var b = <{ b-var | json }>;*/
 /*echo-end */
 

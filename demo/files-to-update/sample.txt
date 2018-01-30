@@ -1,13 +1,11 @@
 ##[ .options comment-start=##[ comment-end=]## ]##
-##[   .options output=test.output.txt ]##
-##[ var      t   = pack.test.js ]##
+##[ .options output=sample.output.txt ]##
 
 ##[ echo ]##
 ##[ echo-end ]##
-##[ var      a   = pack.actions.js ]##
-##[ var json cb  = callback-data.js ]##
-##[ var      abc = list.abc.txt ]##
-##[ var      hw  = list.highways.txt ]##
+##[ var      a   = ../resources/pack.actions.js ]##
+##[ var      t   = ../resources/pack.test.js ]##
+##[ var json cb  = ../resources/callback-data.js ]##
 
   ##[ echo Hosts List ]##
   ##[ echo {{t:hosts |a:printList |a:addLineNumber}} ]##
@@ -23,6 +21,3 @@
   
   ##[ echo {{cb}} ]##
   ##[ echo-end ]##
-  
- ##[ echo {{ abc  hw | a:likeLadder }} ]##
- ##[ echo-end ]##

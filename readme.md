@@ -74,7 +74,7 @@ Don't use like:
 
 *var statement* define variables.
 
-Notice, all examples below are using `##[` and `]##` as *comment delimiters*,
+Notice, the following examples are using `##[` and `]##` as *comment delimiters*,
 in order to show the end of statements clearly.
 
     ##[ var var-type var-name = resource-uri ]##
@@ -182,7 +182,7 @@ Processing Logic:
 1. Context of actions is bind to parsed `result`.
 1. `get` type will be executed at last, means `result` context is available.
 
-Check `demo/pack.*.js` for examples.
+Check `demo/resources/pack.*.js` for examples.
 
 ### Actions
 

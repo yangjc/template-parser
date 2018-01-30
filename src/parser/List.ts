@@ -17,13 +17,13 @@ export type List = string[];
 
 export function getList(content: string): List {
     const options: ListOptions = new InFileOptions(content).options;
-    const ignoreToken: string = options.hasOwnProperty('ignore-mark') ? options['ignore-mark'] : '#';
+    const ignoreMark: string = options.hasOwnProperty('ignore-mark') ? options['ignore-mark'] : '#';
     const removeBlankLines: boolean = !options['keep-blank-lines'];
     const keepDuplicate: boolean = options['keep-duplicate'] === true;
     const useTrim: boolean = !options['no-trim'];
 
     return content.trim().split(/\r?\n|\r/).reduce((list: List, item: string): List => {
-        if (ignoreToken && item.indexOf(ignoreToken) === 0) {
+        if (ignoreMark && item.indexOf(ignoreMark) === 0) {
             return list;
         }
         if (useTrim) {
