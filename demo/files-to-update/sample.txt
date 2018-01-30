@@ -1,23 +1,36 @@
 ##[ .options comment-start=##[ comment-end=]## ]##
 ##[ .options output=sample.output.txt ]##
 
-##[ echo ]##
-##[ echo-end ]##
-##[ var      a   = ../resources/pack.actions.js ]##
-##[ var      t   = ../resources/pack.test.js ]##
-##[ var json cb  = ../resources/callback-data.js ]##
+##[ var        a     = ../resources/pack.actions.js ]##
+##[ var        t     = ../resources/pack.test.js ]##
+##[ var json   cb    = ../resources/callback-data.js ]##
+##[ var stat   s     = https://github.com/yangjc ]##
+##[ var stat   f     = sample.txt ]##
+##[ var value  null  = null ]##
+##[ var number n2    = 2 ]##
 
-  ##[ echo Hosts List ]##
+  ##[ echo Example 1: Hosts List. ]##
   ##[ echo {{t:hosts |a:printList |a:addLineNumber}} ]##
   ##[ echo-end ]##
 
-    ##[ echo source code: {{t:html}} ]##
+    ##[ echo Example 2: Reading from http page.]##
+    ##[ echo Source code: {{t:html}} ]##
     ##[ echo-end ]##
    
-   ##[ echo repository url: {{ t:package:repository:url }} ]##
-   ##[ echo NO blanks between colon! This will not print as expected: {{ t : package : repository : url }} ]##
-   ##[ echo using context: {{|t:showSth}} ]##
-   ##[ echo-end ]##
-  
-  ##[ echo {{cb}} ]##
+    ##[ echo Example 3: Reading from http request and parse as json.]##
+    ##[ echo Repository url from data: {{ t:package:repository:url }} ]##
+    ##[ echo NO blanks between colon! This will not print as expected: {{ t : package : repository : url }} ]##
+    ##[ echo A single colon means reading value from previous action: {{ f | json : null n2 }}]##
+    ##[ echo-end ]##
+
+  ##[ echo Example 4: Using context, output host:port and some numbers.]##
+  ##[ echo {{|t:showSth}} ]##
   ##[ echo-end ]##
+
+  ##[ echo Example 5: Reading from http response header.]##
+  ##[ echo Date: {{ s:date }}; Expires: {{ s:expires }}; ]##
+  ##[ echo-end ]##
+
+##[ echo Example 6: Reading from jsonp-like content.]##
+##[ echo Data: {{cb}} ]##
+##[ echo-end ]##

@@ -9,7 +9,7 @@ import { promisify } from 'util';
 import { stat, readFile, writeFile } from 'fs';
 
 import {
-    ResourceLoader, getResourceType, resourceTypes,
+    ResourceLoader, resourceTypes, getResourceType, getValueType, getValue,
     varTypeRegExpPattern as varTypeREP
 } from './ResourceLoader';
 import { PackAction, PackActionOptions, builtInActions, setIndent } from './PackAction';
@@ -32,7 +32,7 @@ export interface Options extends BuiltInOptions {
 
 interface VarsReplacement {
     actions: string;
-    inputs: any[];
+    inputs: string;
     echoIndex: number;
     lineIndex: number;
     inlineIndex: number;
@@ -43,6 +43,12 @@ interface VarsReplacement {
 interface EchoBlockInfo {
     lines: number;
     vars: (string[])[];
+}
+
+interface ActionWithArgs {
+    actionName?: string;
+    action?: PackAction;
+    args: any[];
 }
 
 export interface Info {
@@ -119,8 +125,19 @@ export class TemplateParser {
             let varType: string = m[1];
             const varName: string = m[2];
             let uri: string = m[3].trim();
-            let resourceType: string = getResourceType(uri);
+
+            let resourceType: string = getValueType(varType);
+            
             if (resourceType) {
+                try {
+                    this.vars[varName] = getValue(varType, uri);
+                } catch (e) {
+                    resourceType = 'error';
+                    e.desc = `Get value "${varType} ${uri}" error.\nFrom: ${m[0]}`;
+                    this.errors.push(e);
+                }
+
+            } else if (resourceType = getResourceType(uri)) {
                 switch (resourceType) {
                     case resourceTypes.file:
                     case resourceTypes.node:
@@ -133,34 +150,65 @@ export class TemplateParser {
                     varType = r.varType;
                     this.vars[varName] = await r.getResult();
                     resourceType = r.resourceType;
+
                 } catch (e) {
                     resourceType = 'error';
                     e.desc = `Load resource "${uri}" error.\nFrom: ${m[0]}`;
                     this.errors.push(e);
                 }
             }
+
             this.info.var.push(`(${resourceType || 'ignored'}) ${varType} ${varName} = ${uri}`);
         }
     }
 
-    private readVar(varNames: string): any {
-        return readByNames(this.vars, varNames.split(/\s*:\s*/), 0);
+    private readVar(varText: string): any {
+        const names: string[] = varText.split(/\s*:\s*/);
+        if (!this.vars.hasOwnProperty(names[0])) {
+            return varText;
+        }
+        const value: any = readByNames(this.vars, names, 0);
+        return value === undefined ? '' : value;
     }
 
-    private readVars(varsNames: string): any[] {
-        return varsNames.split(new RegExp(`${blankREP}+`)).map((names: string) => {
-            const value: any = this.readVar(names);
-            return value === undefined ? names : value;
-        });
+    private getActionWithArgs(varsText: string, offset: number, previousValue?: any): ActionWithArgs {
+        const vars: string[] = varsText.split(new RegExp(`${blankREP}+`));
+        const args: any[] = [];
+        let usingPreValue: boolean = false;
+        for (let i: number = offset, l: number = vars.length; i < l; i++) {
+            if (vars[i] === ':') {
+                usingPreValue = true;
+                args.push(previousValue);
+            } else {
+                args.push(this.readVar(vars[i]));
+            }
+
+            if (offset === 0) {
+                return {args};
+            }
+        }
+
+        const actionName = vars[0];
+        if (!usingPreValue) {
+            args.push(previousValue);
+        }
+
+        return {
+            actionName,
+            action: builtInActions.hasOwnProperty(actionName)
+                ? builtInActions[actionName]
+                : this.readVar(actionName),
+            args,
+        };
     }
 
     private echoVars(text: string, echoIndex: number): string {
-        const rVarKey = `[${nameREC}]+(?::[${nameREC}]+)*`;
-        const rAction = `(?:${blankREP}*\\|${blankREP}*${rVarKey})*`;
+        const varKeyREP: string = `(?::|[${nameREC}]+(?::[${nameREC}]+)*)`;
+        const varsKeyREP: string = `${varKeyREP}(?:${blankREP}+${varKeyREP})*`;
         // {{ var0:key0:key1 var2 | var:action-name }}
         const reg = new RegExp(
             `${this.vStartREP}${blankREP}*`
-            + `(${rVarKey}(?:${blankREP}+${rVarKey})*)?(${rAction})`
+            + `(${varsKeyREP})?((?:${blankREP}*\\|${blankREP}*${varsKeyREP})*)`
             + `${blankREP}*${this.vEndREP}`,
             'g'
         );
@@ -168,12 +216,11 @@ export class TemplateParser {
         const lineIndex: number = this.info.echo[echoIndex].vars.length;
         this.info.echo[echoIndex].vars.push(varsInfo);
         return text.replace(reg, ($0, $1, $2) => {
-            const varsNames: string = $1 || '';
-            const actions: string = ($2 && $2.replace(/^\s*\|\s*/, '')) || 'print';
-            const inputs: any[] = this.readVars(varsNames);
+            const inputs: string = $1 || '';
+            const actions: string = ($2 && $2.replace(/^\s*\|\s*/, '')) || '';
             const inlineIndex: number = varsInfo.length;
             varsInfo.push(
-                `${varsNames} | ${actions.replace(/\s*\|\s*/, ' | ')}`.replace(/\s+/, ' ')
+                `${inputs} | ${actions.replace(/\s*\|\s*/, ' | ')}`.replace(/\s+/, ' ')
             );
 
             const index: number = this.varsReplacements.length;
@@ -194,37 +241,26 @@ export class TemplateParser {
 
     private async updateVarsReplacements(): Promise<void> {
         for (let item of this.varsReplacements) {
-            const inputs: any[] = item.inputs;
-            const actions: string[] = item.actions.split(/\s*\|\s*/);
             const options: PackActionOptions = this.echoOptions[item.echoIndex];
-            let isFirst: boolean = true;
-            let value: any;
 
-            for (let i = 0; i < inputs.length; i++) {
-                if (typeof inputs[i] === 'function') {
-                    inputs[i] = await inputs[i]();
-                }
-            }
+            let a: ActionWithArgs = this.getActionWithArgs(item.inputs, 0);
+            let value: any = a.args[0];
 
-            for (let actionName of actions) {
-                const action: any = builtInActions.hasOwnProperty(actionName)
-                    ? builtInActions[actionName]
-                    : this.readVar(actionName);
+            if (item.actions) {
+                const actions: string[] = item.actions.split(/\s*\|\s*/);
+                for (let actionText of actions) {
+                    a = this.getActionWithArgs(actionText, 1, value);
 
-                if (typeof action === 'function') {
-                    if (isFirst) {
-                        value = await (<PackAction>action)(options, ...inputs);
-                    } else {
-                        value = await (<PackAction>action)(options, value);
+                    if (typeof a.action !== 'function') {
+                        throw new Error(`Action "${a.actionName}" using in "${item.text}" should be function.`);
                     }
-                    
-                } else {
-                    throw new Error(`Action "${actionName}" using in "${item.text}" should be function.`);
+
+                    value = await a.action(options, ...a.args);
                 }
-                isFirst = false;
             }
 
             value = value ? setIndent(options, value) : '';
+
             this.info.echo[item.echoIndex].vars[item.lineIndex][item.inlineIndex]
                 = `(${value.length}) ${this.info.echo[item.echoIndex].vars[item.lineIndex][item.inlineIndex]}`;
             this.content = this.content.replace(item.placeholder, value);
@@ -351,6 +387,7 @@ export class TemplateParser {
         
         await this.getOutputFilePath();
         await this.getVars();
+        // console.log(this.vars);
         await this.updateEcho();
         await this.updateVarsReplacements();
 

@@ -5,7 +5,7 @@
 Title of Content
 
 A Text Ladder:
-    // echo {{ abc hw | a:likeLadder }}
+    // echo {{ abc | a:likeLadder : hw }}
     // echo-end
 
 Foot of content.

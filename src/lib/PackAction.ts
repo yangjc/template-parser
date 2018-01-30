@@ -27,12 +27,10 @@ export function setIndent(options: PackActionOptions, text: string): string {
     return text.replace(new RegExp(lineBreaks, 'g'), `${lineBreaks}${options.indent || ''}`);
 }
 
-// 不允许async函数
 export const builtInActions: PackActions = {
-    json: (options: PackActionOptions, ...values: any[]): string => {
-        return values.map(v => JSON.stringify(v)).join('');
+
+    json: (options: PackActionOptions, value: any, replacer: any, space: string | number): string => {
+        return JSON.stringify(value, replacer, space);
     },
-    print: (options: PackActionOptions, ...values: any[]): string => {
-        return values.join('');
-    },
+
 };

@@ -36,7 +36,7 @@ Examples:
 Some rules:
 
 1. All lines with *template statements* must be wrapped by *comment delimiters*.
-1. A *template statement* should be written inside one line, no real contents around.
+1. A *template statement* includes a whole line.
 
 Don't use like:
 
@@ -45,9 +45,6 @@ Don't use like:
 ### Delimiters
 
 * *comment delimiters*
-    * *Start comment delimiter* including line break character (or beginning of content) in the head.
-    * *End comment delimiter* including line break character (or ending of content) at the tail.
-
 * *variable delimiters*
 
 ### Tokens
@@ -60,7 +57,7 @@ Don't use like:
 ### Operators
 
 * `=` Assigning resource to a variable.
-* `:` Accessing property of a variable.
+* `:` Accessing property value of a variable, or return value from previous action.
 * `|` Calling action (function), like piping.
 
 ### Statements
@@ -79,7 +76,7 @@ in order to show the end of statements clearly.
 
     ##[ var var-type var-name = resource-uri ]##
 
-Variable value comes from local file or http/https url.\
+Variable value comes from a resource or a value.\
 *Var-Type* tells how to parse resource. *Var-Type* is optional.
 
 ### echo statement, echo-end statement
@@ -115,20 +112,25 @@ Variables are wrapped by *variable delimiters*.
 
     ##[ echo line one {{ var-name }} {{ obj:key0 }} ]##
     ##[ echo More lines {{ obj:key-of-obj:key-of-key-of-obj | actions:action0 | actions:action1 }} ]##
-    ##[ echo Multiple variables to action {{ obj:key1 obj:key2 obj:key3 | actions:action2 }} ]##
+    ##[ echo Multiple variables to action {{ obj:key | actions:action2 : obj:key2 obj:key3 }} ]##
     ##[ echo-end ]##
 
 Some rules:
 
 1. Characters allowed in name are: `a-z` `A-Z` `0-9` `_` `.` `-`, no blanks.
-1. Use `:` to get property of variable, NOT `.`, because `.` is allowed in name.
-1. No blanks around `:`.
-1. Multiple variables allowed before **first** `|`.
+1. Use `:` to get property of variable, NOT `.`, because `.` is allowed in name. No blanks around `:`.
+1. Multiple variables are separated by blanks.
+1. The statement after each `|` is an action calling.
+The first variable is the action (function), all arguments following.
+Use a single `:` to access the return value of previous action.
+1. The statement before first `|` means the action of "return the first variable, and ignore others".
 
 ### options statement
 
-    ##[ .options name=value name1=value1 ]##
-    ##[ .options::name2=value2::other=::boolean-option]##
+    ##[ .options comment-start=##[ comment-end=]## ]##
+    ##[ .options::name=value::other=::boolean-option]##
+
+Some rules:
 
 1. Characters allowed in options name are same as variable name.
 1. Characters between `.options` and first name is separator, can be customized.
@@ -142,6 +144,7 @@ Some rules:
 
 * `http` or `https` url.
 * Local file path (related to current file path).
+* A value.
 
 ### Local File Resource Name
 
@@ -153,7 +156,11 @@ File name rule: `var-type.file-name.file-type`.
 * `json` Using `JSON.parse()`.
 * `text` Return plain text.
 * `pack` Return Node.js module.
-* `get`  Execute function and using it's return.
+* `get` Execute function and using it's return.
+* `stat` Return http/https response headers, or file stat.
+* `value` `null`,`undefined`,`true`,`false`.
+* `number` Will be converted to number.
+* `string` Same as what you write.
 
 `http`/`https` resources using `text` by default, and `pack`/`get` is not available.\
 For Local file resource, all types are available.
@@ -178,7 +185,8 @@ Using context in action:
 
 Processing Logic:
 
-1. If *var-type* declared, loads resource and assigns to `result[varName]`, *var-type* will be removed from property name.
+1. If *var-type* declared, loads resource and assigns to `result[varName]`,
+*var-type* will be removed from property name.
 1. Context of actions is bind to parsed `result`.
 1. `get` type will be executed at last, means `result` context is available.
 
@@ -186,21 +194,16 @@ Check `demo/resources/pack.*.js` for examples.
 
 ### Actions
 
-Some notice:
-
-1. If variable before first `|` is a function, it will be executed and using it's return.
-1. Type of first action: `(options: ActionOptions, ...inputs: any[]) => any`.
-1. Type of other actions: `(options: ActionOptions, input: any) => any`.
-
-#### Built-in Actions
-
-* `print` Default action, means `.toString()`.
-* `json` Output using `JSON.stringify()`.
+Type of an action: `(options: ActionOptions, ...inputs: any[]) => any`.
 
 #### ActionOptions
 
 * `indent` Blanks in front of line.
 * `lineBreaks` Line breaks characters.
+
+#### Built-in Actions
+
+* `json` Output using `JSON.stringify()`.
 
 ### Built-in Options
 
@@ -212,6 +215,10 @@ Some notice:
 #### Optional Options
 
 * `output` Path of output file. 
+
+## TODO
+
+* Support calling local command as action.
 
 
 <!--- Reference#1 https://en.wikipedia.org/wiki/Comparison_of_programming_languages_(syntax) --->

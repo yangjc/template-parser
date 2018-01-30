@@ -8,10 +8,12 @@ import { basename } from 'path';
 import { FileResource } from './FileResource';
 import { requireSync } from '../external/Require';
 import { promisify } from 'util';
-import { readFile } from 'fs';
+import { readFile, stat } from 'fs';
 import { getList } from '../parser/List';
 import { nameRegExpChars } from './InFileOptions';
-import { requestGet } from '../util/HttpClient';
+import { requestGet, RequestCaches, RequestReturn } from '../util/HttpClient';
+
+const rCaches: RequestCaches = {};
 
 interface Getters {
     [name: string]: Function;
@@ -23,6 +25,7 @@ export const varTypes = {
     text: 'text',
     pack: 'pack',
     get: 'get',
+    stat: 'stat',
 };
 
 export const defaultVarType: string = varTypes.text;
@@ -33,7 +36,44 @@ export const resourceTypes = {
     node: 'node',
 };
 
-export const varTypeRegExpPattern = Object.keys(varTypes).join('|');
+export const valueVarTypes = {
+    value: 'value',
+    number: 'number',
+    string: 'string',
+};
+
+export const varTypeRegExpPattern = `${Object.keys(varTypes).join('|')}|${Object.keys(valueVarTypes).join('|')}`;
+
+export function getValueType(varType: string): string {
+    return valueVarTypes.hasOwnProperty(varType) ? valueVarTypes.value : '';
+}
+
+export function getValue(varType: string, value: any): any {
+    switch (varType) {
+        case valueVarTypes.value:
+            switch (value) {
+                case 'null':
+                    return null;
+                case 'undefined':
+                    return undefined;
+                case 'true':
+                    return true;
+                case 'false':
+                    return false;
+
+                default:
+                    throw new TypeError(`Unknown value "${value}".`);
+            }
+
+        case valueVarTypes.number:
+            return Number(value);
+
+        case valueVarTypes.string:
+            return value;
+    }
+
+    throw new TypeError(`Unknown value type "${varType}".`);
+}
 
 export function getResourceType(uri: string): string {
     if (!uri || typeof uri !== 'string') {
@@ -74,7 +114,7 @@ export class ResourceLoader {
     readonly varType: string;
     readonly name: string;
 
-    public result: any;
+    private _result: any;
 
     private exports: any;
     private content: string;
@@ -115,51 +155,86 @@ export class ResourceLoader {
         this.varType = varType;
     }
 
+    private async readAsHttp(): Promise<void> {
+        try {
+            const r: RequestReturn = await requestGet(this.uri, rCaches);
+
+            switch (this.varType) {
+                case varTypes.stat:
+                    this._result = r.headers;
+                    break;
+
+                default:
+                    this.content = r.body;
+            }
+
+        } catch (e) {
+            e.message = `Request "${this.uri}" error.\n${e.message}`;
+            throw e;
+        }
+    }
+
+    private async readAsFile(): Promise<void> {
+        try {
+            switch (this.varType) {
+                case varTypes.stat:
+                    this._result = await promisify(stat)(this.uri);
+                    break;
+
+                default:
+                    this.content = await promisify(readFile)(this.uri, 'utf8');
+            }
+
+        } catch (e) {
+            e.message = `Read file "${this.uri}" error.\n${e.message}`;
+        }
+    }
+
     private async getContent(): Promise<void> {
         switch (this.resourceType) {
             case resourceTypes.node:
-                this.content = '';
                 this.exports = requireSync(this.uri);
                 break;
 
             case resourceTypes.http:
-                try {
-                    this.content = await requestGet(this.uri);
-                } catch (e) {
-                    e.message = `Request "${this.uri}" error.\n${e.message}`;
-                    throw e;
-                }
+                await this.readAsHttp();
                 break;
 
             case resourceTypes.file:
-                try {
-                    this.content = await promisify(readFile)(this.uri, 'utf8');
-                } catch (e) {
-                    e.message = `Read file "${this.uri}" error.\n${e.message}`;
-                }
+                await this.readAsFile();
                 break;
+
             default:
                 throw new Error(`Unknown resource type "${this.resourceType}".`);
         }
+    }
 
-        if (typeof this.content !== 'string') {
-            throw new TypeError(`Content should be string.`);
+    private parseJson(): void {
+        try {
+            this._result = JSON.parse(
+                this.content
+                    .replace(/^\s*(?:;\s*)*(?:(?:[a-z_$][\w$]*)?\s*\()?/i, '')
+                    .replace(/\)?(?:\s*;)*\s*$/, '')
+            );
+        } catch (e) {
+            e.message = `Parse as json error.\n${e.message}`;
+            throw e;
         }
     }
 
     private async parsePack(): Promise<void> {
         if (!this.hasOwnProperty('exports')) {
-            throw new Error(`No exports to parse.`);
+            throw new Error(`No pack exports to parse.`);
         }
 
         if (!this.exports || typeof this.exports !== 'object' || Array.isArray(this.exports)) {
-            this.result = this.exports;
+            this._result = this.exports;
             return;
         }
 
         const nameRegExp = new RegExp(`^(${varTypeRegExpPattern}) ([${nameRegExpChars}]+)$`);
 
-        this.result = {};
+        this._result = {};
 
         for (let name in this.exports) {
             if (!this.exports.hasOwnProperty(name)) {
@@ -175,10 +250,10 @@ export class ResourceLoader {
                 }
 
             } else if (m && getResourceType(value)) {
-                this.result[m[2]] = await new ResourceLoader(value, m[1]).getResult();
+                this._result[m[2]] = await new ResourceLoader(value, m[1]).getResult();
                 
             } else {
-                this.result[name] = typeof value === 'function' ? value.bind(this.result) : value;
+                this._result[name] = typeof value === 'function' ? value.bind(this._result) : value;
             }
         }
     }
@@ -189,46 +264,38 @@ export class ResourceLoader {
         }
 
         try {
-            this.result = await this.exports();
+            this._result = await this.exports();
         } catch (e) {
             e.message = `Parse as var type "get" error.\n${e.message}`;
             throw e;
         }
     }
 
-    private async runGetters(): Promise<void> {
+    private async executeGetters(): Promise<void> {
         for (let name in this.getters) {
             if (this.getters.hasOwnProperty(name)) {
                 try {
-                    this.result[name] = await this.getters[name].call(this.result);
+                    this._result[name] = await this.getters[name].call(this._result);
                 } catch (e) {
                     e.message = `Execute "get ${name}" error.\n${e.message}`;
                     throw e;
                 }
             }
         }
-        this.getters = null;
     }
 
-    public async getResult(): Promise<any> {
-        await this.getContent();
+    private async processVarType(): Promise<void> {
+        if (this.hasOwnProperty('_result')) {
+            return;
+        }
 
         switch (this.varType) {
             case varTypes.json:
-                try {
-                    this.result = JSON.parse(
-                        this.content
-                            .replace(/^\s*(?:;\s*)*(?:(?:[a-z_$][\w$]*)?\s*\()?/i, '')
-                            .replace(/\)?(?:\s*;)*\s*$/, '')
-                    );
-                } catch (e) {
-                    e.message = `Parse as json error.\n${e.message}`;
-                    throw e;
-                }
+                this.parseJson();
                 break;
 
             case varTypes.list:
-                this.result = getList(this.content);
+                this._result = getList(this.content);
                 break;
 
             case varTypes.pack:
@@ -236,17 +303,33 @@ export class ResourceLoader {
                 break;
 
             case varTypes.text:
-                this.result = this.content;
+                this._result = this.content;
                 break;
 
             case varTypes.get:
                 await this.parseGet();
                 break;
         }
+    }
 
-        await this.runGetters();
+    private clear(): void {
+        this.content = null;
+        this.exports = null;
+        this.getters = null;
+    }
 
-        return this.result;
+    public async getResult(): Promise<any> {
+        await this.getContent();
+        await this.processVarType();
+        await this.executeGetters();
+
+        this.clear();
+
+        return this._result;
+    }
+
+    public get result(): any {
+        return this._result;
     }
 
 }

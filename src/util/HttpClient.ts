@@ -5,10 +5,19 @@
 'use strict';
 
 import { URL } from 'url';
-import { get as httpGet } from 'http';
+import { get as httpGet, IncomingHttpHeaders } from 'http';
 import { get as httpsGet } from 'https';
 
-export function requestGet(url: string, cache?: any): Promise<string> {
+export interface RequestReturn {
+    headers: IncomingHttpHeaders;
+    body: string;
+}
+
+export interface RequestCaches {
+    [url: string]: RequestReturn;
+}
+
+export function requestGet(url: string, cache?: RequestCaches): Promise<RequestReturn> {
     if (cache && cache.hasOwnProperty(url)) {
         return Promise.resolve(cache[url]);
     }
@@ -41,10 +50,14 @@ export function requestGet(url: string, cache?: any): Promise<string> {
             });
             res.on('error', reject);
             res.on('end', () => {
+                const r: RequestReturn = {
+                    headers: res.headers,
+                    body: rawData,
+                };
                 if (cache) {
-                    cache[url] = rawData;
+                    cache[url] = r;
                 }
-                resolve(rawData);
+                resolve(r);
             });
         }).on('error', reject);
     });
