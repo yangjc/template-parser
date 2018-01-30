@@ -2,9 +2,9 @@
 
 A template parser for any type of file.
 
-Write the *template statements* in contents where can be ignored.\
-Template parser will replace all variables.\
-*Template statements* will be kept if updating file itself, but will be removed if writing to another file.
+Write the *template statements* in contents where can be ignored, like comments.\
+Template parser will replace all variables in *Statements*.\
+*Statements* will be kept if updating file itself, and will be removed if writing to another file.
 
 All options, like *comment delimiters*, or *variable delimiters*, can be customized.
 
@@ -29,7 +29,7 @@ Examples:
     // echo some text
     // echo-end
 
-    // echo line one {{ var-name }} {{ var-obj:key0 }}
+    // echo line one {{ var-name }} {{ var-obj:key }}
     // echo More lines
     // echo-end
 
@@ -61,7 +61,7 @@ Don't use like:
 
 * `=` Assigning resource to a variable.
 * `:` Accessing property of a variable.
-* `|` Calling action (like piping).
+* `|` Calling action (function), like piping.
 
 ### Statements
 
@@ -123,7 +123,6 @@ Some rules:
 1. Characters allowed in name are: `a-z` `A-Z` `0-9` `_` `.` `-`, no blanks.
 1. Use `:` to get property of variable, NOT `.`, because `.` is allowed in name.
 1. No blanks around `:`.
-1. Use `|` to call actions (functions), similar as piping in Linux.
 1. Multiple variables allowed before **first** `|`.
 
 ### options statement
@@ -150,7 +149,7 @@ File name rule: `var-type.file-name.file-type`.
 
 ### Var-Type
 
-* `list` Parse plain text, return array of echo line.
+* `list` Parse plain text, return array of each line.
 * `json` Using `JSON.parse()`.
 * `text` Return plain text.
 * `pack` Return Node.js module.
@@ -179,9 +178,9 @@ Using context in action:
 
 Processing Logic:
 
-1. If *var-type* declared, load resource and assigns to result, *var-type* will be removed from name.
-1. Context of actions is bind to parsed result.
-1. `get` type will be executed at last, means result context is available.
+1. If *var-type* declared, loads resource and assigns to `result[varName]`, *var-type* will be removed from property name.
+1. Context of actions is bind to parsed `result`.
+1. `get` type will be executed at last, means `result` context is available.
 
 Check `demo/pack.*.js` for examples.
 
@@ -214,4 +213,5 @@ Some notice:
 
 * `output` Path of output file. 
 
-[comment]: <> ( https://en.wikipedia.org/wiki/Comparison_of_programming_languages_(syntax) )
+
+<!--- Reference#1 https://en.wikipedia.org/wiki/Comparison_of_programming_languages_(syntax) --->
