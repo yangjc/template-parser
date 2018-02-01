@@ -187,6 +187,7 @@ export class ResourceLoader {
 
         } catch (e) {
             e.message = `Read file "${this.uri}" error.\n${e.message}`;
+            throw e;
         }
     }
 

@@ -14,7 +14,7 @@ import {
 } from './ResourceLoader';
 import { PackAction, PackActionOptions, builtInActions, setIndent } from './PackAction';
 import {
-    BuiltInOptions, InFileOptions, escapeDelimiter, removeBlankTopLine, isNotStartWithLB,
+    BuiltInOptions, InFileOptions, escapeForREPattern, removeBlankTopLine, isNotStartWithLB,
     nameRegExpChars as nameREC, lineBreaksRegExpChars as lbREC,
     blankRegExpPattern as blankREP, lineBreaksRegExpPattern as lbREP, optionsRegExpPattern as optREP
 } from './InFileOptions';
@@ -124,7 +124,7 @@ export class TemplateParser {
         while (m = regVars.exec(this.content)) {
             let varType: string = m[1];
             const varName: string = m[2];
-            let uri: string = m[3].trim();
+            let uri: string = this.inFileOptions.unescape(m[3].trim());
 
             let resourceType: string = getValueType(varType);
             
@@ -322,10 +322,11 @@ export class TemplateParser {
         this.inFileOptions = new InFileOptions(this.content, this.options);
         Object.assign(this.options, this.inFileOptions.options);
 
-        this.cStartREP = escapeDelimiter(this.options['comment-start']);
-        this.cEndREP = escapeDelimiter(this.options['comment-end']);
-        this.vStartREP = escapeDelimiter(this.options['var-start']);
-        this.vEndREP = escapeDelimiter(this.options['var-end']);
+        this.cStartREP = this.options['ignore-head'] + escapeForREPattern(this.options['comment-start']);
+        this.cEndREP = escapeForREPattern(this.options['comment-end']) + this.options['ignore-tail'];
+        
+        this.vStartREP = escapeForREPattern(this.options['var-start']);
+        this.vEndREP = escapeForREPattern(this.options['var-end']);
     }
 
     private async statFilePath(): Promise<void> {

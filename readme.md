@@ -205,20 +205,26 @@ Type of an action: `(options: ActionOptions, ...inputs: any[]) => any`.
 
 * `json` Output using `JSON.stringify()`.
 
-### Built-in Options
+### First Line Options
 
-* `comment-start` Default: `//`.
-* `comment-end` Default: (empty string).
-* `var-start` Default: `{{`.
-* `var-end` Default: `}}`.
+The following options must be written in the first line of *options statements*.
 
-#### Optional Options
+* `comment-start` Default: `//`. The delimiter for comment start.
+* `comment-end` Default: (empty string). The delimiter for comment end.
+* `escape` Default: (undefined). Escaping character. If defined, this option must be written first.
+* `ignore-head` Default: (empty string).
+Regular expression for ignoring some characters in the head of *statement* line.
+* `ignore-tail` Default: (empty string).
+Regular expression for ignoring some characters at the tail of *statement* line.
 
-* `output` Path of output file. 
+### Other Options
+
+* `var-start` Default: `{{`. The delimiter for variable start.
+* `var-end` Default: `}}`. The delimiter for variable end.
+* `output` Default: (undefined). Path of output file.
 
 ## TODO
 
 * Support calling local command as action.
-
 
 <!--- Reference#1 https://en.wikipedia.org/wiki/Comparison_of_programming_languages_(syntax) --->
