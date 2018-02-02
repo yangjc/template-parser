@@ -14,12 +14,13 @@ import { TemplateParser, Options } from '../lib/TemplateParser';
     if (!file) {
         return console.log(
             `Usage
-    node parse.js file-path [--%s=] [--%s=] [--%s=] [--%s=] [--%s=]`,
+    node parse.js file-path [--%s=] [--%s=] [--%s=] [--%s=] [--%s=] [--%s]`,
             'comment-start',
             'comment-end',
             'var-start',
             'var-end',
             'output',
+            'keep-statements',
         );
     }
 
@@ -30,6 +31,7 @@ import { TemplateParser, Options } from '../lib/TemplateParser';
         'var-start': argv['var-start'],
         'var-end': argv['var-end'],
         'output': argv['output'],
+        'keep-statements': argv['keep-statements'],
     };
     // options.commentStart = '//\t';
     // options.commentEnd = '';

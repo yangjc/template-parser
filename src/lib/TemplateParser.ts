@@ -29,7 +29,7 @@ export interface Vars {
 }
 
 export interface Options extends BuiltInOptions {
-    'remove-statements'?: boolean;
+    'keep-statements'?: boolean;
     'vars'?: Vars;
 }
 
@@ -446,17 +446,14 @@ export class TemplateParser {
                 throw new Error(`Output "${this.options.output}" exists but is not a file.`);
             }
 
-            if (typeof this.options['remove-statements'] !== 'boolean') {
-                this.options['remove-statements'] = true;
-            }
-
         } else {
+            this.options['keep-statements'] = true;
             this.options.output = this.inFileOptions.options.output = this.filePath;
         }
     }
 
     private removeTemplateStatements(): void {
-        if (this.options['remove-statements'] !== true) {
+        if (this.options['keep-statements']) {
             return;
         }
 
