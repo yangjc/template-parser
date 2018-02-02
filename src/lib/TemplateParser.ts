@@ -8,25 +8,19 @@ import { resolve, dirname } from 'path';
 import { promisify } from 'util';
 import { stat, readFile, writeFile } from 'fs';
 
-import * as path from 'path';
-import * as url from 'url';
-
 import {
     ResourceLoader, resourceTypes, getResourceType, getValueType, getValue,
     varTypeRegExpPattern as varTypeREP
 } from './ResourceLoader';
-import { PackAction, PackActionOptions, builtInActions, setIndent, wrapPack } from './PackAction';
+import { PackAction, PackActionOptions } from './PackResource';
 import {
     BuiltInOptions, InFileOptions, escapeForREPattern, removeBlankTopLine, isNotStartWithLB,
     nameRegExpChars as nameREC, lineBreaksRegExpChars as lbREC,
     blankRegExpPattern as blankREP, lineBreaksRegExpPattern as lbREP, optionsRegExpPattern as optREP
 } from './InFileOptions';
+import { Vars, BuiltInVars } from './BuiltInVars';
 import { requireSync } from '../external/Require';
 
-
-export interface Vars {
-    [varName: string]: any;
-}
 
 export interface Options extends BuiltInOptions {
     'keep-statements'?: boolean;
@@ -66,39 +60,14 @@ export interface InfoError extends Error {
     desc: string;
 }
 
-export function readByNames(object: any, names: string[], index: number = 0): any {
-    const name: string = names[index];
-    if (!object.hasOwnProperty(name)) {
-        return undefined;
-    }
-    const value: any = object[name];
-    if (index === names.length - 1) {
-        return value;
-    }
-    return value ? readByNames(value, names, index + 1) : undefined;
-}
+const NO_ARG: Symbol = Symbol();
 
-export function lowerObjectName(target: any, source: any): any {
-    for (let name in source) {
-        if (source.hasOwnProperty(name)) {
-            const value: any = source[name];
-            if (typeof name === 'string') {
-                name = name.toLowerCase();
-            }
-            switch (typeof value) {
-                case 'number':
-                case 'string':
-                case 'boolean':
-                case 'undefined':
-                    target[name] = value;
-                    break;
-                case 'object':
-                    target[name] = value ? lowerObjectName({}, value) : value;
-                    break;
-            }
-        }
+function setIndent(options: PackActionOptions, text: string): string {
+    const lineBreaks: string = options.lineBreaks || '';
+    if (typeof text !== 'string') {
+        text = '' + text;
     }
-    return target;
+    return text.replace(new RegExp(lineBreaks, 'g'), `${lineBreaks}${options.indent || ''}`);
 }
 
 export class TemplateParser {
@@ -122,41 +91,7 @@ export class TemplateParser {
     private fileDir: string;
     private content: string = null;
     private echoOptions: PackActionOptions[] = [];
-    private vars: Vars = {
-        null: null,
-        undefined: undefined,
-        true: true,
-        false: false,
-        number: new Proxy({}, {
-            get: function (target, name) {
-                if (name === 'hasOwnProperty') {
-                    return target.hasOwnProperty = () => true;
-                }
-                return typeof name === 'number' ? name : (typeof name === 'string' ? Number(name) : NaN);
-            },
-        }),
-        env: lowerObjectName({}, process.env),
-        process: {
-            'env': process.env,
-            'arch': process.arch,
-            'platform': process.platform,
-            'node-version': process.version,
-            'versions': process.versions,
-            'release': (<any>process).release,
-        },
-        path: Object.assign({
-            win32: wrapPack(path.win32),
-            posix: wrapPack(path.posix),
-        }, wrapPack(path)),
-        url: wrapPack(url, [
-            'format',
-            'parse',
-            'resolve',
-            'domainToASCII',
-            'domainToUnicode',
-        ]),
-        options: {},
-    };
+    private vars: Vars = new BuiltInVars();
     private varsReplacements: VarsReplacement[] = [];
     
     constructor(filePath: string, options?: Options) {
@@ -242,12 +177,38 @@ export class TemplateParser {
         }
     }
 
+    private readByVarKeys(object: any, keys: string[], index: number = 0): any {
+        let key: string = keys[index];
+
+        if (index > 0 && key.substr(0, 2) === '..') {
+            const n: string = key.substr(2);
+            if (this.vars.hasOwnProperty(n)) {
+                const v: any = this.vars[n];
+                switch (typeof v) {
+                    case 'string':
+                    case 'number':
+                        object.hasOwnProperty(v) && (key = v);
+                        break;
+                }
+            }
+        }
+
+        if (!object.hasOwnProperty(key)) {
+            return undefined;
+        }
+        const value: any = object[key];
+        if (index === keys.length - 1) {
+            return value;
+        }
+        return value ? this.readByVarKeys(value, keys, index + 1) : undefined;
+    }
+
     private readVar(varText: string): any {
-        const names: string[] = varText.split(/\s*:\s*/);
-        if (!this.vars.hasOwnProperty(names[0])) {
+        const keys: string[] = varText.split(/\s*:\s*/);
+        if (!this.vars.hasOwnProperty(keys[0])) {
             return varText;
         }
-        const value: any = readByNames(this.vars, names, 0);
+        const value: any = this.readByVarKeys(this.vars, keys, 0);
         return value === undefined ? '' : value;
     }
 
@@ -258,9 +219,9 @@ export class TemplateParser {
         for (let i: number = offset, l: number = vars.length; i < l; i++) {
             if (vars[i] === ':') {
                 usingPreValue = true;
-                args.push(previousValue);
+                previousValue !== NO_ARG && args.push(previousValue);
             } else {
-                args.push(this.readVar(vars[i]));
+                args.push(vars[i] ? this.readVar(vars[i]) : NO_ARG);
             }
 
             if (offset === 0) {
@@ -269,15 +230,13 @@ export class TemplateParser {
         }
 
         const actionName = vars[0];
-        if (!usingPreValue) {
+        if (!usingPreValue && previousValue !== NO_ARG) {
             args.push(previousValue);
         }
 
         return {
             actionName,
-            action: builtInActions.hasOwnProperty(actionName)
-                ? builtInActions[actionName]
-                : this.readVar(actionName),
+            action: this.readVar(actionName),
             args,
         };
     }
@@ -480,14 +439,13 @@ export class TemplateParser {
         this.getOptions();
         await this.getOutputFilePath();
 
-        Object.assign(this.vars.options, this.inFileOptions.options);
+        this.vars.options = Object.assign({}, this.inFileOptions.options);
 
         await this.getVars();
         await this.updateEcho();
         await this.updateVarsReplacements();
 
         this.removeTemplateStatements();
-        
         await promisify(writeFile)(this.options.output, this.content, 'utf8');
 
         return this.options.output;

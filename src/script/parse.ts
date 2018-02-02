@@ -35,7 +35,7 @@ import { TemplateParser, Options } from '../lib/TemplateParser';
     };
     // options.commentStart = '//\t';
     // options.commentEnd = '';
-    console.log(`file: ${file}\n\ncli options: ${JSON.stringify(options, null, 2)}`);
+    console.log(`\ninput: ${file}\n\ncli options: ${JSON.stringify(options, null, 2)}`);
 
     const parser = new TemplateParser(file, options);
     let parseError: Error;

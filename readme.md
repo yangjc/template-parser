@@ -26,9 +26,6 @@ Examples:
     // var var-name = resource-uri
     // var var-obj = resource-uri
     
-    // echo some text
-    // echo-end
-
     // echo line one {{ var-name }} {{ var-obj:key }}
     // echo More lines
     // echo-end
@@ -111,10 +108,11 @@ Variables in *echo statement* or *resource uri* will be replace by their values.
 Variables are wrapped by *variable delimiters*.
 
     ##[ var string a = {{ env.path }}]##
+    ##[ var string key = {{ string-from-a-variable }}]##
 
-    ##[ echo line one {{ var-name }} {{ obj:key0 }} ]##
-    ##[ echo More lines {{ obj:key-of-obj:key-of-key-of-obj | actions:action0 | actions:action1 }} ]##
-    ##[ echo Multiple variables to action {{ obj:key | actions:action2 : obj:key2 obj:key3 }} ]##
+    ##[ echo line one {{ var-name }} {{ obj:..key }} ]##
+    ##[ echo More lines {{ obj:key0:key1 | pack:action0 | pack:action1 }} ]##
+    ##[ echo Multiple variables to action {{ obj:key | pack:action2 : obj:key2 obj:key3 }} ]##
     ##[ echo-end ]##
 
 Some rules:
@@ -126,6 +124,7 @@ Some rules:
 The first variable is the action (function), all arguments following.
 Use a single `:` to access the return value of previous action.
 1. The statement before first `|` means the action of "return the first variable, and ignore others".
+1. Use `..` before a key to access variable as a property name.
 
 ### options statement
 
@@ -159,7 +158,7 @@ File name rule: `var-type.file-name.file-type`.
 * `text` Return plain text.
 * `pack` Return Node.js module.
 * `get` Execute function and using it's return.
-* `stat` Return http/https response headers, or file stat.
+* `stat` Return http/https response headers, or [file stat](https://nodejs.org/api/fs.html#fs_class_fs_stats).
 * `value` Values of `null`,`undefined`,`true`,`false`. Or use them directly, like `{{ null }}`.
 * `number` Will be converted to number. Or use like `{{ number:666 }}`.
 * `string` Same as what you write.
@@ -197,17 +196,23 @@ Check `demo/resources/pack.*.js` for examples.
 
 ### Built-in Variables
 
+* [`json`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify)
 * `null` `undefined` `true` `false`
 * `number:*` Any number.
 * `options` Formatted in file options.
-* `env` An object containing the user environment, all property names are lower case.
+* `env` An object containing the [user environment](https://nodejs.org/api/process.html#process_process_env).
 * `path` From [Node.js "path" module](https://nodejs.org/api/path.html).
 * `url` Some functions from [Node.js "url" module](https://nodejs.org/api/url.html).
-* `process:env` Original user environment object.
-* `process:arch` The operating system CPU architecture.
-* `process:platform` The operating system platform.
-* `process:node-version` The current running Node.js version.
-* `process:versions` An object listing the version strings of Node.js and its dependencies.
+* [`process:env`(with lowercase names)](https://nodejs.org/api/process.html#process_process_env)
+ [`process:arch`](https://nodejs.org/api/process.html#process_process_arch)
+ [`process:platform`](https://nodejs.org/api/process.html#process_process_platform)
+ [`process:node-version`](https://nodejs.org/api/process.html#process_process_version)
+ [`process:versions`](https://nodejs.org/api/process.html#process_process_versions)
+ [`process:release`](https://nodejs.org/api/process.html#process_process_release)
+* [`Date:new`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date)
+ [`Date:parse`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/parse)
+ [`Date:UTC`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/UTC)
+ [`Date:now`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/now)
 
 ### Actions
 
@@ -217,10 +222,6 @@ Type of an action: `(options: ActionOptions, ...inputs: any[]) => any`.
 
 * `indent` Blanks in front of line.
 * `lineBreaks` Line breaks characters.
-
-#### Built-in Actions
-
-* `json` Output using `JSON.stringify()`.
 
 ### First Line Options
 

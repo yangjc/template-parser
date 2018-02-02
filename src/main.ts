@@ -5,7 +5,8 @@
 'use strict';
 
 export { FileResource } from './lib/FileResource';
-export { BuiltInOptions, Options, InFileOptions } from './lib/InFileOptions';
-export { PackActionOptions, PackAction, PackActions, builtInActions } from './lib/PackAction';
+export { PackActionOptions, PackAction, Pack } from './lib/PackResource';
 export { ResourceLoader, getResourceType } from './lib/ResourceLoader';
-export { Vars, Options as TemplateParserOptions, TemplateParser, readByNames } from './lib/TemplateParser';
+export { BuiltInOptions, Options, InFileOptions } from './lib/InFileOptions';
+export { Vars, BuiltInVars, cloneObject } from './lib/BuiltInVars';
+export { Options as TemplateParserOptions, TemplateParser } from './lib/TemplateParser';
