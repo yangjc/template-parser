@@ -33,7 +33,18 @@ export const builtInOptions: BuiltInOptions = {
     'var-end': '}}',
     'ignore-head': '',
     'ignore-tail': '',
+    'escape': undefined,
+    'output': undefined,
 };
+
+export function isOptionValue(value: any) {
+    switch (typeof value) {
+        case 'boolean':
+        case 'string':
+            return true;
+    }
+    return false;
+}
 
 export function escapeForREPattern(delimiter: string): string {
     if (/\s/.test(delimiter.replace(/[ \t]+/g, ''))) {
@@ -86,7 +97,7 @@ export class InFileOptions {
             this.getBlockRE();
             this.getOptions(text);
         }
-        this.setDefaults();
+        this.setOtherOptions(options);
         delete this.optionsLineRE;
         delete this.optionsItemRE;
     }
@@ -197,26 +208,28 @@ export class InFileOptions {
 
     }
 
+    private getOptionValue(options: BuiltInOptions, name: keyof BuiltInOptions): void {
+        let value: string | boolean = options && options.hasOwnProperty(name)
+            ? options[name]
+            : undefined;
+
+        if (isOptionValue(value) || isOptionValue(value = builtInOptions[name])) {
+            this.options[name] = value;
+        }
+    }
+
     private initOptions(options: BuiltInOptions): void {
         for (let name in this.options) {
             if (this.options.hasOwnProperty(name)) {
-                let value: string | boolean;
-                if (options && options.hasOwnProperty(name)) {
-                    value = options[<keyof BuiltInOptions>name];
-                }
-                if (typeof value === 'string' || typeof value === 'boolean') {
-                    this.options[name] = value;
-                } else {
-                    this.options[name] = builtInOptions[<keyof BuiltInOptions>name];
-                }
+                this.getOptionValue(options, <keyof BuiltInOptions>name);
             }
         }
     }
 
-    private setDefaults(): void {
+    private setOtherOptions(options: BuiltInOptions): void {
         for (let name in builtInOptions) {
-            if (!this.options.hasOwnProperty(name)) {
-                this.options[name] = builtInOptions[<keyof BuiltInOptions>name];
+            if (builtInOptions.hasOwnProperty(name) && !this.options.hasOwnProperty(name)) {
+                this.getOptionValue(options, <keyof BuiltInOptions>name);
             }
         }
     }

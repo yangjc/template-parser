@@ -6,14 +6,15 @@
 ##[ var json   cb     = ../resources/callback-data.js ]##
 ##[ var stat   s      = https://github.com/yangjc ]##
 ##[ var stat   f      = sample.txt ]##
-
 ##[ var string p-desc = The env path]##
 ##[ var string p0     = {{ p-desc }} is: {{ env:path }} (path ends here)]##
+
+##[ echo Output: {{options:output}}]##
+##[ echo-end ]##
 
   ##[ echo Example 1: Hosts List. ]##
   ##[ echo {{t:hosts |a:printList |a:addLineNumber}} ]##
   ##[ echo-end ]##
-
 
     ##[ echo Example 2: Reading from http page.]##
     ##[ echo Source code: {{t:html}} ]##

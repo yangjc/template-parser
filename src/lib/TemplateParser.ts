@@ -8,11 +8,14 @@ import { resolve, dirname } from 'path';
 import { promisify } from 'util';
 import { stat, readFile, writeFile } from 'fs';
 
+import * as path from 'path';
+import * as url from 'url';
+
 import {
     ResourceLoader, resourceTypes, getResourceType, getValueType, getValue,
     varTypeRegExpPattern as varTypeREP
 } from './ResourceLoader';
-import { PackAction, PackActionOptions, builtInActions, setIndent } from './PackAction';
+import { PackAction, PackActionOptions, builtInActions, setIndent, wrapPack } from './PackAction';
 import {
     BuiltInOptions, InFileOptions, escapeForREPattern, removeBlankTopLine, isNotStartWithLB,
     nameRegExpChars as nameREC, lineBreaksRegExpChars as lbREC,
@@ -26,8 +29,8 @@ export interface Vars {
 }
 
 export interface Options extends BuiltInOptions {
-    output?: string;
-    vars?: Vars;
+    'remove-statements'?: boolean;
+    'vars'?: Vars;
 }
 
 interface VarValue {
@@ -117,7 +120,6 @@ export class TemplateParser {
 
     private inFileOptions: InFileOptions;
     private fileDir: string;
-    private outputFilePath: string = '';
     private content: string = null;
     private echoOptions: PackActionOptions[] = [];
     private vars: Vars = {
@@ -140,7 +142,20 @@ export class TemplateParser {
             'platform': process.platform,
             'node-version': process.version,
             'versions': process.versions,
-        }
+            'release': (<any>process).release,
+        },
+        path: Object.assign({
+            win32: wrapPack(path.win32),
+            posix: wrapPack(path.posix),
+        }, wrapPack(path)),
+        url: wrapPack(url, [
+            'format',
+            'parse',
+            'resolve',
+            'domainToASCII',
+            'domainToUnicode',
+        ]),
+        options: {},
     };
     private varsReplacements: VarsReplacement[] = [];
     
@@ -399,7 +414,7 @@ export class TemplateParser {
         this.vEndREP = escapeForREPattern(this.options['var-end']);
     }
 
-    private async statFilePath(): Promise<void> {
+    private async testFilePath(): Promise<void> {
         const s = await promisify(stat)(this.filePath);
         if (!s.isFile()) {
             throw new Error(`Not file "${this.filePath}".`);
@@ -410,30 +425,41 @@ export class TemplateParser {
 
     private async getOutputFilePath(): Promise<void> {
         if (typeof this.options.output === 'string' && this.options.output) {
-            this.outputFilePath = this.inFileOptions.options.hasOwnProperty('output')
+            this.options.output = this.inFileOptions.options.hasOwnProperty('output')
                 ? resolve(this.fileDir, this.options.output)
                 : resolve(this.options.output);
+            this.inFileOptions.options.output = this.options.output;
 
-            if (this.outputFilePath.toLowerCase() === this.filePath.toLowerCase()) {
+            if (this.options.output.toLowerCase() === this.filePath.toLowerCase()) {
                 throw new Error(`Output can't override source file.`);
             }
 
             let s: any;
             try {
-                s = await promisify(stat)(this.outputFilePath);
+                s = await promisify(stat)(this.options.output);
             } catch (e) {
                 if (e.code !== 'ENOENT') {
                     throw e;
                 }
             }
             if (s && !s.isFile()) {
-                throw new Error(`Output "${this.outputFilePath}" exists but is not a file.`);
+                throw new Error(`Output "${this.options.output}" exists but is not a file.`);
             }
-        }
 
+            if (typeof this.options['remove-statements'] !== 'boolean') {
+                this.options['remove-statements'] = true;
+            }
+
+        } else {
+            this.options.output = this.inFileOptions.options.output = this.filePath;
+        }
     }
 
     private removeTemplateStatements(): void {
+        if (this.options['remove-statements'] !== true) {
+            return;
+        }
+
         this.content = this.inFileOptions.removeOptions(this.content);
 
         let m: any;
@@ -452,26 +478,22 @@ export class TemplateParser {
     }
 
     async parse(): Promise<string> {
-        await this.statFilePath();
+        await this.testFilePath();
         this.content = await promisify(readFile)(this.filePath, 'utf8');
         this.getOptions();
-        
         await this.getOutputFilePath();
+
+        Object.assign(this.vars.options, this.inFileOptions.options);
+
         await this.getVars();
-        // console.log(this.vars);
         await this.updateEcho();
         await this.updateVarsReplacements();
 
-        let output: string;
-        if (this.outputFilePath) {
-            this.removeTemplateStatements();
-            output = this.outputFilePath;
-        } else {
-            output = this.filePath;
-        }
+        this.removeTemplateStatements();
         
-        await promisify(writeFile)(output, this.content, 'utf8');
-        return output;
+        await promisify(writeFile)(this.options.output, this.content, 'utf8');
+
+        return this.options.output;
     }
 
     printError(): number {

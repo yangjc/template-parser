@@ -2,6 +2,10 @@
 // var abc = ../resources/list.abc.txt
 // var hw  = ../resources/list.highways.txt
 
+// echo Output file{{ path:posix:delimiter }} {{ options:output }}
+// echo Output file name{{ path:posix:delimiter }} {{ options:output | path:basename }}{{ path:delimiter }}
+// echo-end
+
 Title of Content
 
 A Text Ladder:

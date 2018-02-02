@@ -199,7 +199,10 @@ Check `demo/resources/pack.*.js` for examples.
 
 * `null` `undefined` `true` `false`
 * `number:*` Any number.
+* `options` Formatted in file options.
 * `env` An object containing the user environment, all property names are lower case.
+* `path` From [Node.js "path" module](https://nodejs.org/api/path.html).
+* `url` Some functions from [Node.js "url" module](https://nodejs.org/api/url.html).
 * `process:env` Original user environment object.
 * `process:arch` The operating system CPU architecture.
 * `process:platform` The operating system platform.
@@ -240,8 +243,5 @@ Regular expression for ignoring some characters at the tail of *statement* line.
 ## TODO
 
 * Support calling local command as action.
-
-
-
 
 <!--- Reference#1 https://en.wikipedia.org/wiki/Comparison_of_programming_languages_(syntax) --->
