@@ -107,8 +107,10 @@ In this case, "line 3" will be rewritten:
 
 ### Variables
 
-Variables in *echo statement* will be replace by their values.\
+Variables in *echo statement* or *resource uri* will be replace by their values.\
 Variables are wrapped by *variable delimiters*.
+
+    ##[ var string a = {{ env.path }}]##
 
     ##[ echo line one {{ var-name }} {{ obj:key0 }} ]##
     ##[ echo More lines {{ obj:key-of-obj:key-of-key-of-obj | actions:action0 | actions:action1 }} ]##
@@ -158,12 +160,13 @@ File name rule: `var-type.file-name.file-type`.
 * `pack` Return Node.js module.
 * `get` Execute function and using it's return.
 * `stat` Return http/https response headers, or file stat.
-* `value` `null`,`undefined`,`true`,`false`.
-* `number` Will be converted to number.
+* `value` Values of `null`,`undefined`,`true`,`false`. Or use them directly, like `{{ null }}`.
+* `number` Will be converted to number. Or use like `{{ number:666 }}`.
 * `string` Same as what you write.
 
 `http`/`https` resources using `text` by default, and `pack`/`get` is not available.\
 For Local file resource, all types are available.
+
 If *var-type* not declared, get *var-type* from file name, otherwise use `text`.
 
 #### Pack Type
@@ -191,6 +194,17 @@ Processing Logic:
 1. `get` type will be executed at last, means `result` context is available.
 
 Check `demo/resources/pack.*.js` for examples.
+
+### Built-in Variables
+
+* `null` `undefined` `true` `false`
+* `number:*` Any number.
+* `env` An object containing the user environment, all property names are lower case.
+* `process:env` Original user environment object.
+* `process:arch` The operating system CPU architecture.
+* `process:platform` The operating system platform.
+* `process:node-version` The current running Node.js version.
+* `process:versions` An object listing the version strings of Node.js and its dependencies.
 
 ### Actions
 
@@ -226,5 +240,8 @@ Regular expression for ignoring some characters at the tail of *statement* line.
 ## TODO
 
 * Support calling local command as action.
+
+
+
 
 <!--- Reference#1 https://en.wikipedia.org/wiki/Comparison_of_programming_languages_(syntax) --->

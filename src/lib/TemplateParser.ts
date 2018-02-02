@@ -30,14 +30,17 @@ export interface Options extends BuiltInOptions {
     vars?: Vars;
 }
 
+interface VarValue {
+    expression: string;
+    value: string;
+}
+
 interface VarsReplacement {
-    actions: string;
-    inputs: string;
+    text: string;
+    expression: string;
     echoIndex: number;
     lineIndex: number;
-    inlineIndex: number;
     placeholder: string;
-    text: string;
 }
 
 interface EchoBlockInfo {
@@ -72,6 +75,29 @@ export function readByNames(object: any, names: string[], index: number = 0): an
     return value ? readByNames(value, names, index + 1) : undefined;
 }
 
+export function lowerObjectName(target: any, source: any): any {
+    for (let name in source) {
+        if (source.hasOwnProperty(name)) {
+            const value: any = source[name];
+            if (typeof name === 'string') {
+                name = name.toLowerCase();
+            }
+            switch (typeof value) {
+                case 'number':
+                case 'string':
+                case 'boolean':
+                case 'undefined':
+                    target[name] = value;
+                    break;
+                case 'object':
+                    target[name] = value ? lowerObjectName({}, value) : value;
+                    break;
+            }
+        }
+    }
+    return target;
+}
+
 export class TemplateParser {
 
     readonly filePath: string;
@@ -94,7 +120,28 @@ export class TemplateParser {
     private outputFilePath: string = '';
     private content: string = null;
     private echoOptions: PackActionOptions[] = [];
-    private vars: Vars = {};
+    private vars: Vars = {
+        null: null,
+        undefined: undefined,
+        true: true,
+        false: false,
+        number: new Proxy({}, {
+            get: function (target, name) {
+                if (name === 'hasOwnProperty') {
+                    return target.hasOwnProperty = () => true;
+                }
+                return typeof name === 'number' ? name : (typeof name === 'string' ? Number(name) : NaN);
+            },
+        }),
+        env: lowerObjectName({}, process.env),
+        process: {
+            'env': process.env,
+            'arch': process.arch,
+            'platform': process.platform,
+            'node-version': process.version,
+            'versions': process.versions,
+        }
+    };
     private varsReplacements: VarsReplacement[] = [];
     
     constructor(filePath: string, options?: Options) {
@@ -108,7 +155,7 @@ export class TemplateParser {
         return `~~~t-p-updating:${this.placeholderSign}#${index}~~~`;
     }
 
-    private getVarRE(): RegExp {
+    private getVarStmtRE(): RegExp {
         // var var-type var-name = uri
         return new RegExp(
             `(?:^|${lbREP})${blankREP}*${this.cStartREP}${blankREP}*`
@@ -118,13 +165,31 @@ export class TemplateParser {
         );
     }
 
+    private async getURIValue(uri: string): Promise<string> {
+        const reg: RegExp = this.getAccessVarRE();
+        let uriValue: string = '';
+        let m: any;
+        let i: number = 0;
+        while (m = reg.exec(uri)) {
+            const v: VarValue = await this.getVarValue(m[0], m[1], {indent: '', lineBreaks: '', });
+            uriValue = `${uriValue}${uri.substring(i, m.index)}${v.value}`;
+            i = m.index + m[0].length;
+        }
+        if (i > 0) {
+            return `${uriValue}${uri.substr(i)}`;
+        }
+        return uri;
+    }
+
     private async getVars(): Promise<void> {
-        const regVars = this.getVarRE();
+        const regVars = this.getVarStmtRE();
         let m: any;
         while (m = regVars.exec(this.content)) {
             let varType: string = m[1];
             const varName: string = m[2];
             let uri: string = this.inFileOptions.unescape(m[3].trim());
+
+            uri = await this.getURIValue(uri);
 
             let resourceType: string = getValueType(varType);
             
@@ -202,72 +267,77 @@ export class TemplateParser {
         };
     }
 
-    private echoVars(text: string, echoIndex: number): string {
+    private async getVarValue(varText: string, expression: string, options: PackActionOptions): Promise<VarValue> {
+        const actions: string[] = expression.split(/\s*\|\s*/);
+
+        let a: ActionWithArgs = this.getActionWithArgs(actions[0], 0);
+        let value: any = a.args[0];
+
+        const aLen: number = actions.length;
+        if (aLen > 1) {
+            for (let i: number = 1; i < aLen; i++) {
+                a = this.getActionWithArgs(actions[i], 1, value);
+
+                if (typeof a.action !== 'function') {
+                    throw new Error(`Action "${a.actionName}" in ${varText} should be function.`);
+                }
+
+                try {
+                    value = await a.action(options, ...a.args);
+                } catch (e) {
+                    e.message = `Execute action "${a.actionName}" in ${varText} Error.\n${e.message}`;
+                    throw e;
+                }
+            }
+        }
+
+        return {
+            expression: `${actions.join(' | ').replace(/\s+/, ' ')}`,
+            value: value === undefined ? '' : setIndent(options, value),
+        }
+    }
+
+    private getAccessVarRE(): RegExp {
         const varKeyREP: string = `(?::|[${nameREC}]+(?::[${nameREC}]+)*)`;
         const varsKeyREP: string = `${varKeyREP}(?:${blankREP}+${varKeyREP})*`;
         // {{ var0:key0:key1 var2 | var:action-name }}
-        const reg = new RegExp(
+        return new RegExp(
             `${this.vStartREP}${blankREP}*`
-            + `(${varsKeyREP})?((?:${blankREP}*\\|${blankREP}*${varsKeyREP})*)`
+            + `((?:${varsKeyREP})?(?:${blankREP}*\\|${blankREP}*${varsKeyREP})*)`
             + `${blankREP}*${this.vEndREP}`,
             'g'
         );
+    }
+
+    private echoVars(text: string, echoIndex: number): string {
         const varsInfo: string[] = [];
         const lineIndex: number = this.info.echo[echoIndex].vars.length;
         this.info.echo[echoIndex].vars.push(varsInfo);
-        return text.replace(reg, ($0, $1, $2) => {
-            const inputs: string = $1 || '';
-            const actions: string = ($2 && $2.replace(/^\s*\|\s*/, '')) || '';
-            const inlineIndex: number = varsInfo.length;
-            varsInfo.push(
-                `${inputs} | ${actions.replace(/\s*\|\s*/, ' | ')}`.replace(/\s+/, ' ')
-            );
-
+        return text.replace(this.getAccessVarRE(), ($0, $1) => {
             const index: number = this.varsReplacements.length;
             const placeholder: string = this.getPlaceholder(index);
             this.varsReplacements.push({
-                actions,
-                inputs,
+                text: $0,
+                expression: $1,
                 echoIndex,
                 lineIndex,
-                inlineIndex,
                 placeholder,
-                text: $0,
             });
-
             return placeholder;
         });
     }
 
     private async updateVarsReplacements(): Promise<void> {
         for (let item of this.varsReplacements) {
-            const options: PackActionOptions = this.echoOptions[item.echoIndex];
-
-            let a: ActionWithArgs = this.getActionWithArgs(item.inputs, 0);
-            let value: any = a.args[0];
-
-            if (item.actions) {
-                const actions: string[] = item.actions.split(/\s*\|\s*/);
-                for (let actionText of actions) {
-                    a = this.getActionWithArgs(actionText, 1, value);
-
-                    if (typeof a.action !== 'function') {
-                        throw new Error(`Action "${a.actionName}" using in "${item.text}" should be function.`);
-                    }
-
-                    value = await a.action(options, ...a.args);
-                }
-            }
-
-            value = value ? setIndent(options, value) : '';
-
-            this.info.echo[item.echoIndex].vars[item.lineIndex][item.inlineIndex]
-                = `(${value.length}) ${this.info.echo[item.echoIndex].vars[item.lineIndex][item.inlineIndex]}`;
-            this.content = this.content.replace(item.placeholder, value);
+            const v: VarValue = await this.getVarValue(item.text, item.expression, this.echoOptions[item.echoIndex]);
+            this.info.echo[item.echoIndex].vars[item.lineIndex].push(
+                `(${v.value.length}) ${v.expression}`
+            );
+            this.content = this.content.replace(item.placeholder, v.value);
         }
     }
 
-    private getEchoRE(): RegExp {
+    private getEchoBlockRE(): RegExp {
         // echo ...
         // echo-end
         return new RegExp(
@@ -285,7 +355,7 @@ export class TemplateParser {
     }
 
     private updateEcho(): void {
-        this.content = this.content.replace(this.getEchoRE(), ($0, $1, $2, $3, $4, $5) => {
+        this.content = this.content.replace(this.getEchoBlockRE(), ($0, $1, $2, $3, $4, $5) => {
             const tVarLines: string = $1;
             const indent: string = $2;
             const tEnd: string = $4;
@@ -368,14 +438,14 @@ export class TemplateParser {
 
         let m: any;
 
-        m = this.getVarRE().exec(this.content);
-        this.content = this.content.replace(this.getVarRE(), '');
+        m = this.getVarStmtRE().exec(this.content);
+        this.content = this.content.replace(this.getVarStmtRE(), '');
         if (m && m.index === 0 && isNotStartWithLB(m[0])) {
             this.content = removeBlankTopLine(this.content);
         }
 
-        m = this.getEchoRE().exec(this.content);
-        this.content = this.content.replace(this.getEchoRE(), '$3');
+        m = this.getEchoBlockRE().exec(this.content);
+        this.content = this.content.replace(this.getEchoBlockRE(), '$3');
         if (m && m.index === 0 && isNotStartWithLB(m[0])) {
             this.content = removeBlankTopLine(this.content);
         }
