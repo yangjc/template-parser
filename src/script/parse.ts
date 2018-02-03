@@ -10,34 +10,30 @@ import { TemplateParser, Options } from '../lib/TemplateParser';
 
 (async () => {
     const argv: minimist.ParsedArgs = minimist(process.argv.slice(2));
-    let file: string = argv._[0];
+    const file: string = argv._[0];
     if (!file) {
         return console.log(
             `Usage
-    node parse.js file-path [--%s=] [--%s=] [--%s=] [--%s=] [--%s=] [--%s]`,
-            'comment-start',
-            'comment-end',
-            'var-start',
-            'var-end',
+    node parse.js file-path [--%s=] [--%s] [--%s=] [--%s=]`,
             'output',
             'keep-statements',
+            'comment-start',
+            'comment-end'
         );
     }
 
-    file = resolve(process.cwd(), file);
     const options: Options = {
+        'input': resolve(process.cwd(), file),
         'comment-start': argv['comment-start'],
         'comment-end': argv['comment-end'],
-        'var-start': argv['var-start'],
-        'var-end': argv['var-end'],
         'output': argv['output'],
         'keep-statements': argv['keep-statements'],
     };
     // options.commentStart = '//\t';
     // options.commentEnd = '';
-    console.log(`\ninput: ${file}\n\ncli options: ${JSON.stringify(options, null, 2)}`);
+    console.log(`\ncli options: ${JSON.stringify(options, null, 2)}`);
 
-    const parser = new TemplateParser(file, options);
+    const parser = new TemplateParser(options);
     let parseError: Error;
     let outputFile: string;
     try {

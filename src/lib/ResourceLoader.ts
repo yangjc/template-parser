@@ -44,37 +44,6 @@ export const valueVarTypes = {
 
 export const varTypeRegExpPattern = `${Object.keys(varTypes).join('|')}|${Object.keys(valueVarTypes).join('|')}`;
 
-export function getValueType(varType: string): string {
-    return valueVarTypes.hasOwnProperty(varType) ? valueVarTypes.value : '';
-}
-
-export function getValue(varType: string, value: any): any {
-    switch (varType) {
-        case valueVarTypes.value:
-            switch (value) {
-                case 'null':
-                    return null;
-                case 'undefined':
-                    return undefined;
-                case 'true':
-                    return true;
-                case 'false':
-                    return false;
-
-                default:
-                    throw new TypeError(`Unknown value "${value}".`);
-            }
-
-        case valueVarTypes.number:
-            return Number(value);
-
-        case valueVarTypes.string:
-            return value;
-    }
-
-    throw new TypeError(`Unknown value type "${varType}".`);
-}
-
 export function getResourceType(uri: string): string {
     if (!uri || typeof uri !== 'string') {
         return null;

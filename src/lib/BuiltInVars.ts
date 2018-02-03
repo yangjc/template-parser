@@ -8,16 +8,23 @@ import * as path from 'path';
 import * as url from 'url';
 
 import { PackAction, PackActionOptions, Pack } from './PackResource';
+import { BuiltInOptions, escapeForREPattern } from './InFileOptions';
 
 const HAS_ANY_PROPERTY = Symbol();
+
+export interface VarsOptions extends BuiltInOptions {
+    input?: string;
+    output?: string; // 调用时传入的值
+}
 
 export interface Vars {
     [varName: string]: any;
 }
 
 export function wrapAction(fn: (...a: any[]) => any): PackAction {
-    return function (options: PackActionOptions, ...args): string {
-        return fn(...args);
+    return function (options: PackActionOptions, ...args): any {
+        const result: any = fn(...args);
+        return typeof result === 'string' ? result.replace(/\r?\n|\r/g, options.lineBreaks) : result;
     };
 }
 
@@ -84,9 +91,27 @@ export function forAnyPropertyProxy(): any {
     return o;
 }
 
+export function escapeText(text: string, escapeChar: string, chars?: string): string {
+    if (!escapeChar) {
+        return text;
+    }
+    chars = `${escapeChar}${chars || ''}`;
+    let re: RegExp;
+    try {
+        re = new RegExp(`[${escapeForREPattern(chars)}]`, 'g');
+    } catch (e) {
+        e.message = `Get RegExp for escape "${chars}" error.\n${e.message}`;
+        throw e;
+    }
+    return text.replace(re, $0 => `${escapeChar}${$0}`);
+}
+
 export class BuiltInVars implements Vars {
 
     readonly json: PackAction = wrapAction(JSON.stringify);
+    readonly escape: PackAction = wrapAction(escapeText);
+
+    readonly options: VarsOptions;
 
     readonly null: null = null;
     readonly undefined: undefined = undefined;
@@ -136,5 +161,10 @@ export class BuiltInVars implements Vars {
     ]), {
         new: wrapAction((...a: any[]): Date => new Date(...a)),
     });
+
+    constructor(options: BuiltInOptions, vars?: Vars) {
+        Object.assign(this, vars);
+        Object.assign(this.options = {}, options);
+    }
 
 }

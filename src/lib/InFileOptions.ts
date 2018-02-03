@@ -12,11 +12,6 @@ export interface BuiltInOptions {
     'ignore-head'?: string;
     'ignore-tail'?: string;
     'escape'?: string;
-    'output'?: string;
-}
-
-export interface Options extends BuiltInOptions {
-    [name: string]: string | boolean;
 }
 
 export const optionsRegExpPattern: string = '\\.options';
@@ -34,7 +29,6 @@ export const builtInOptions: BuiltInOptions = {
     'ignore-head': '',
     'ignore-tail': '',
     'escape': undefined,
-    'output': undefined,
 };
 
 export function isOptionValue(value: any) {
@@ -46,11 +40,11 @@ export function isOptionValue(value: any) {
     return false;
 }
 
-export function escapeForREPattern(delimiter: string): string {
-    if (/\s/.test(delimiter.replace(/[ \t]+/g, ''))) {
+export function escapeForREPattern(text: string): string {
+    if (/\s/.test(text.replace(/[ \t]+/g, ''))) {
         throw new Error(`Pattern should not contain blank characters other than spaces and tabs.`);
     }
-    return delimiter.replace(/[\-[\]{}()*+?.,\\^$|#]/g, '\\$&');
+    return text.replace(/[\-[\]{}()*+?.,\\^$|#]/g, '\\$&');
 }
 
 export function removeBlankTopLine(text: string): string {
@@ -75,7 +69,7 @@ const optStmtREP: string = `${optREP}(${sepCharREP}+)([^${lbREC}]+)`;
 export class InFileOptions {
 
     // 声明需要在第一次解析使用的配置名
-    readonly options: Options = {
+    readonly options: BuiltInOptions = {
         'comment-start': undefined,
         'comment-end': undefined,
         'escape': undefined,
@@ -102,7 +96,7 @@ export class InFileOptions {
         delete this.optionsItemRE;
     }
 
-    private testOptionAsREPattern(optionName: string) {
+    private testOptionAsREPattern(optionName: keyof BuiltInOptions) {
         if (!this.options[optionName]) {
             return;
         }
@@ -130,6 +124,8 @@ export class InFileOptions {
 
     private getEscapeRE(value: string): void {
         if (value) {
+            value = value[0]; // 只取第一个字符作为转义字符
+
             try {
                 this.escapeRE = new RegExp(`${escapeForREPattern(value)}([^${lbREC}])`, 'g');
             } catch (e) {
@@ -153,7 +149,7 @@ export class InFileOptions {
                 const m: any = this.optionsItemRE.exec(item);
                 if (m && m[2] !== undefined && this.options.hasOwnProperty(m[1])) {
                     this.firstParsingCount++;
-                    const optionName: string = m[1];
+                    const optionName: keyof BuiltInOptions = m[1];
                     const optionValue: string = m[2];
                     
                     switch (optionName) {
@@ -171,7 +167,7 @@ export class InFileOptions {
     private getOptions(text: string): void {
         let m: any = this.optionsBlockRE.exec(text);
         if (!m) {
-            return;
+            throw new Error(`Options conflicted with first parsing.`);
         }
         this.isOnTop = m.index === 0 && isNotStartWithLB(m[0]);
         const tBlock: string = m[0];
@@ -181,12 +177,12 @@ export class InFileOptions {
             for (let item of items) {
                 if (item) {
                     const m: any = this.optionsItemRE.exec(item);
-                    if (m) {
-                        const optionName: string = m[1];
+                    if (m && builtInOptions.hasOwnProperty(m[1])) {
+                        const optionName: keyof BuiltInOptions = m[1];
                         let optionValue: boolean | string = m[2] === undefined ? true : m[2];
 
-                        if (optionName === 'escape') {
-                            optionValue = `${this.options['escape']}${optionValue}`;
+                        if (optionName === 'escape' && typeof optionValue === 'string') {
+                            optionValue = optionValue[0];
                         }
 
                         if (this.options.hasOwnProperty(optionName)) {
@@ -199,7 +195,7 @@ export class InFileOptions {
                             }
 
                         } else {
-                            this.options[optionName] = optionValue;
+                            this.options[optionName] = <string>optionValue;
                         }
                     }
                 }

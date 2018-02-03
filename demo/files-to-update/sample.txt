@@ -1,5 +1,5 @@
 ##[ .options comment-start=##[ comment-end=]## ]##
-##[ .options output=sample.output.txt ]##
+##[ var .output       = sample.output.txt ]##
 
 ##[ var        a      = ../resources/pack.actions.js ]##
 ##[ var        t      = ../resources/pack.test.js ]##
@@ -9,7 +9,7 @@
 ##[ var string p-desc = The env path]##
 ##[ var string p0     = {{ p-desc }} is: {{ process:env:path }} (path ends here)]##
 
-##[ echo Output: {{options:output}}]##
+##[ echo Input: {{options:input}}]##
 ##[ echo-end ]##
 
   ##[ echo Example 1: Hosts List. ]##

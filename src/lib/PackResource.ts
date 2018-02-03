@@ -10,7 +10,7 @@ export interface PackActionOptions {
 }
 
 export interface PackAction {
-    (options: PackActionOptions, ...inputs: any[]): string;
+    (options: PackActionOptions, ...inputs: any[]): string | any;
 }
 
 export interface Pack {

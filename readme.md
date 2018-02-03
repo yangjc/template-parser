@@ -17,7 +17,7 @@ All options, like *comment delimiters*, or *variable delimiters*, can be customi
 
 In CLI:
 
-    npm run-script parse file-path [--comment-start=] [--comment-end=] [--var-start=] [--var-end=] [--output=]
+    npm run-script parse file-path [--output=] [--keep-statements] [--comment-start=] [--comment-end=]
 
 ## Template Language Syntax
 
@@ -68,7 +68,7 @@ Don't use like:
 
 *var statement* define variables.
 
-Notice, the following examples are using `##[` and `]##` as *comment delimiters*,
+The following examples are using `##[` and `]##` as *comment delimiters*,
 in order to show the end of statements clearly.
 
     ##[ var var-type var-name = resource-uri ]##
@@ -89,12 +89,7 @@ Continuous *echo statements* print lines with variables.\
 
     ##[ echo-end ]##
 
-Some rules:
-
-1. Blank character after `echo` is required.
-1. No empty lines between *echo statements*.
-
-In this case, "line 3" will be rewritten:
+In this case, "line 3" will be rewritten, because "line 3" is separated by blank line (not continuous anymore):
 
     ##[ echo line 1: echo statements beginning]##
     ##[ echo line 2: OK, continuous echo statement]##
@@ -102,13 +97,14 @@ In this case, "line 3" will be rewritten:
     ##[ echo line 3: this line will be rewritten]##
     ##[ echo-end ]##
 
-### Variables
+### Variable Expression
 
 Variables in *echo statement* or *resource uri* will be replace by their values.\
 Variables are wrapped by *variable delimiters*.
 
-    ##[ var string a = {{ env.path }}]##
+    ##[ var string a = Path: {{ process:env:path }} {{ another-var }} ]##
     ##[ var string key = {{ string-from-a-variable }}]##
+    ##[ var value e = process:env ]
 
     ##[ echo line one {{ var-name }} {{ obj:..key }} ]##
     ##[ echo More lines {{ obj:key0:key1 | pack:action0 | pack:action1 }} ]##
@@ -159,8 +155,8 @@ File name rule: `var-type.file-name.file-type`.
 * `pack` Return Node.js module.
 * `get` Execute function and using it's return.
 * `stat` Return http/https response headers, or [file stat](https://nodejs.org/api/fs.html#fs_class_fs_stats).
-* `value` Values of `null`,`undefined`,`true`,`false`. Or use them directly, like `{{ null }}`.
-* `number` Will be converted to number. Or use like `{{ number:666 }}`.
+* `value` Variable expression without delimiters.
+* `number` Will be converted to number.
 * `string` Same as what you write.
 
 `http`/`https` resources using `text` by default, and `pack`/`get` is not available.\
@@ -196,13 +192,14 @@ Check `demo/resources/pack.*.js` for examples.
 
 ### Built-in Variables
 
-* `options` Formatted in file options.
+* `options` In file options, `options:input` `options:output`.
 * `number:*` Any number.
 * `string:*` String of a name.
 * [`json`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify)
 * `null` `undefined` `true` `false`
 * [`path`](https://nodejs.org/api/path.html)
 * [`url`](https://nodejs.org/api/url.html)
+ `url:format` `url:parse` `url:resolve` `url:domainToASCII` `url:domainToUnicode`
 * [`env`](https://nodejs.org/api/process.html#process_process_env)
 * [`process:env`(with lowercase names)](https://nodejs.org/api/process.html#process_process_env)
  [`process:arch`](https://nodejs.org/api/process.html#process_process_arch)
@@ -214,6 +211,11 @@ Check `demo/resources/pack.*.js` for examples.
  [`Date:parse`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/parse)
  [`Date:UTC`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/UTC)
  [`Date:now`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/now)
+
+### Functional Variables
+
+* `.output` Declare output file.
+* `.ignore` If `true`, do nothing.
 
 ### Actions
 
@@ -240,10 +242,10 @@ Regular expression for ignoring some characters at the tail of *statement* line.
 
 * `var-start` Default: `{{`. The delimiter for variable start.
 * `var-end` Default: `}}`. The delimiter for variable end.
-* `output` Default: (undefined). Path of output file.
 
 ## TODO
 
 * Support calling local command as action.
+
 
 <!--- Reference#1 https://en.wikipedia.org/wiki/Comparison_of_programming_languages_(syntax) --->

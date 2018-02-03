@@ -1,10 +1,11 @@
--- .options comment-start=-- output=sample-vars.output.txt
+-- .options comment-start=--
+-- var .output = sample-vars.output.txt
 
 -- var string u = https://github.com/yangjc
+-- var value v = u | url:parse
 
--- echo Date:now {{|Date:now}}
--- echo Date:new {{|Date:new}}
--- echo url:parse {{u|url:parse|json : null number:2}}
+-- echo Value of parsed url: {{v|json : null number:4}}
+-- echo Date:now {{|Date:now}} Date:new {{|Date:new}}
 -- echo options {{options|json : null number:2}}
 -- echo env {{env|json : null number:2}}
 -- echo process:env {{process:env|json : null number:2}}
