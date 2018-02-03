@@ -44,8 +44,9 @@ import { TemplateParser, Options } from '../lib/TemplateParser';
     console.log(`\noptions: ${JSON.stringify(parser.options, null, 2)}`);
     console.log(`\ninfo: ${JSON.stringify(parser.info, null, 2)}`);
     parser.printError();
+
     if (parseError) {
-        console.log(`\nparse error:\n`);
+        console.error(`\nparse error:\n\n${parseError.message}\n`);
         console.error(parseError);
     } else {
         console.log(`\noutput: ${outputFile}`);

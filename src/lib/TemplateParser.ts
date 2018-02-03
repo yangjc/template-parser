@@ -63,10 +63,6 @@ export interface Info {
     echo: EchoBlockInfo[];
 }
 
-export interface InfoError extends Error {
-    desc?: string;
-}
-
 export const functionalVarsType: {[varName: string]: string} = {
     '.output': 'string',
     '.ignore': 'value',
@@ -93,7 +89,7 @@ export class TemplateParser {
         echo: [],
     };
 
-    private errors: InfoError[] = [];
+    private warning: string[] = [];
     private cStartREP: string;
     private cEndREP: string;
     private vStartREP: string;
@@ -158,9 +154,7 @@ export class TemplateParser {
 
         if (functionalVarsType.hasOwnProperty(varName)) {
             if (varType && functionalVarsType[varName] !== varType) {
-                this.errors.push(
-                    new TypeError(`Functional variable "${varName}" should be "${functionalVarsType[varName]}".`)
-                );
+                this.warning.push(`Functional variable "${varName}" should be "${functionalVarsType[varName]}".`);
             }
             varType = functionalVarsType[varName];
         }
@@ -227,8 +221,8 @@ export class TemplateParser {
                     varType,
                     resourceType: 'error',
                 }
-                e.desc = `Get var "${varType} ${varName}" error.\nFrom: ${m[0]}`;
-                this.errors.push(e);
+                e.message = `Get var "${varInfo.varType} ${varName}" error.\nFrom: ${m[0]}\n${e.message}`;
+                throw e;
             }
 
             this.info.var.push(
@@ -459,7 +453,7 @@ export class TemplateParser {
             if (typeof this.vars['.output'] === 'string' && this.vars['.output']) {
                 this.options.output = resolve(this.fileDir, this.vars['.output']);
             } else {
-                this.errors.push(new Error(`Ignoring functional var ".output".`));
+                this.warning.push(`Ignoring functional var ".output".`);
             }
         }
 
@@ -535,10 +529,10 @@ export class TemplateParser {
 
     printError(): number {
         let i: number = 0;
-        for (let e of this.errors) {
-            console.log(`[ERROR ${++i}] ${e.desc || 'Warning.'}\n${e.stack}`);
+        for (let e of this.warning) {
+            console.log(`[WARNING ${++i}] ${e}`);
         }
-        return this.errors.length;
+        return this.warning.length;
     }
 
 }
