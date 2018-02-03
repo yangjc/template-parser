@@ -9,6 +9,8 @@ import * as url from 'url';
 
 import { PackAction, PackActionOptions, Pack } from './PackResource';
 
+const HAS_ANY_PROPERTY = Symbol();
+
 export interface Vars {
     [varName: string]: any;
 }
@@ -41,7 +43,7 @@ export function wrapPack(module: any, names?: string[]): Pack {
 
 export function cloneObject(target: any, source: any, toLowerName: boolean = false): any {
     for (let name in source) {
-        if (source.hasOwnProperty(name)) {
+        if (hasVarKey(source, name)) {
             const value: any = source[name];
             if (toLowerName && typeof name === 'string') {
                 name = name.toLowerCase();
@@ -59,7 +61,27 @@ export function cloneObject(target: any, source: any, toLowerName: boolean = fal
             }
         }
     }
+
     return target;
+}
+
+export function hasVarKey(value: any, property: string | number | symbol): boolean {
+    switch (typeof value) {
+        case 'object':
+        case 'function':
+            return value
+                ? (Object.prototype.hasOwnProperty.call(value, HAS_ANY_PROPERTY)
+                    || Object.prototype.hasOwnProperty.call(value, property))
+                : false;
+    }
+
+    return false;
+}
+
+export function forAnyPropertyProxy(): any {
+    const o: any = {};
+    Object.defineProperty(o, HAS_ANY_PROPERTY, {});
+    return o;
 }
 
 export class BuiltInVars implements Vars {
@@ -71,12 +93,15 @@ export class BuiltInVars implements Vars {
     readonly true: boolean = true;
     readonly false: boolean = false;
 
-    readonly number = new Proxy({}, {
-        get: function (target, name) {
-            if (name === 'hasOwnProperty') {
-                return target.hasOwnProperty = () => true;
-            }
+    readonly number = new Proxy(forAnyPropertyProxy(), {
+        get: function (target, name): number {
             return typeof name === 'number' ? name : (typeof name === 'string' ? Number(name) : NaN);
+        },
+    });
+
+    readonly string = new Proxy(forAnyPropertyProxy(), {
+        get: function (target, name): string {
+            return name.toString();
         },
     });
 

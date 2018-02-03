@@ -18,7 +18,7 @@ import {
     nameRegExpChars as nameREC, lineBreaksRegExpChars as lbREC,
     blankRegExpPattern as blankREP, lineBreaksRegExpPattern as lbREP, optionsRegExpPattern as optREP
 } from './InFileOptions';
-import { Vars, BuiltInVars } from './BuiltInVars';
+import { Vars, BuiltInVars, hasVarKey } from './BuiltInVars';
 import { requireSync } from '../external/Require';
 
 
@@ -182,34 +182,37 @@ export class TemplateParser {
 
         if (index > 0 && key.substr(0, 2) === '..') {
             const n: string = key.substr(2);
-            if (this.vars.hasOwnProperty(n)) {
+            if (hasVarKey(this.vars, n)) {
                 const v: any = this.vars[n];
                 switch (typeof v) {
                     case 'string':
                     case 'number':
-                        object.hasOwnProperty(v) && (key = v);
+                        hasVarKey(object, v) && (key = v);
                         break;
                 }
             }
         }
 
-        if (!object.hasOwnProperty(key)) {
+        if (!hasVarKey(object, key)) {
             return undefined;
         }
+
         const value: any = object[key];
         if (index === keys.length - 1) {
             return value;
         }
-        return value ? this.readByVarKeys(value, keys, index + 1) : undefined;
+
+        switch (typeof value) {
+            case 'object':
+            case 'function':
+                return this.readByVarKeys(value, keys, index + 1);
+        }
+
+        return undefined;
     }
 
     private readVar(varText: string): any {
-        const keys: string[] = varText.split(/\s*:\s*/);
-        if (!this.vars.hasOwnProperty(keys[0])) {
-            return varText;
-        }
-        const value: any = this.readByVarKeys(this.vars, keys, 0);
-        return value === undefined ? '' : value;
+        return this.readByVarKeys(this.vars, varText.split(/\s*:\s*/), 0);
     }
 
     private getActionWithArgs(varsText: string, offset: number, previousValue?: any): ActionWithArgs {
@@ -272,7 +275,7 @@ export class TemplateParser {
     }
 
     private getAccessVarRE(): RegExp {
-        const varKeyREP: string = `(?::|[${nameREC}]+(?::[${nameREC}]+)*)`;
+        const varKeyREP: string = `(?::|[${nameREC}]+(?::[${nameREC}]*)*)`;
         const varsKeyREP: string = `${varKeyREP}(?:${blankREP}+${varKeyREP})*`;
         // {{ var0:key0:key1 var2 | var:action-name }}
         return new RegExp(

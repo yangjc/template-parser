@@ -8,4 +8,5 @@
 -- echo options {{options|json : null number:2}}
 -- echo env {{env|json : null number:2}}
 -- echo process:env {{process:env|json : null number:2}}
+-- echo string:* {{string:hasOwnProperty}} {{string:}} {{string:a-string}}
 -- echo-end

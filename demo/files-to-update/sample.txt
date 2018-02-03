@@ -7,7 +7,7 @@
 ##[ var stat   s      = https://github.com/yangjc ]##
 ##[ var stat   f      = sample.txt ]##
 ##[ var string p-desc = The env path]##
-##[ var string p0     = {{ p-desc }} is: {{ env:path }} (path ends here)]##
+##[ var string p0     = {{ p-desc }} is: {{ process:env:path }} (path ends here)]##
 
 ##[ echo Output: {{options:output}}]##
 ##[ echo-end ]##

@@ -196,13 +196,14 @@ Check `demo/resources/pack.*.js` for examples.
 
 ### Built-in Variables
 
+* `options` Formatted in file options.
+* `number:*` Any number.
+* `string:*` String of a name.
 * [`json`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify)
 * `null` `undefined` `true` `false`
-* `number:*` Any number.
-* `options` Formatted in file options.
-* `env` An object containing the [user environment](https://nodejs.org/api/process.html#process_process_env).
-* `path` From [Node.js "path" module](https://nodejs.org/api/path.html).
-* `url` Some functions from [Node.js "url" module](https://nodejs.org/api/url.html).
+* [`path`](https://nodejs.org/api/path.html)
+* [`url`](https://nodejs.org/api/url.html)
+* [`env`](https://nodejs.org/api/process.html#process_process_env)
 * [`process:env`(with lowercase names)](https://nodejs.org/api/process.html#process_process_env)
  [`process:arch`](https://nodejs.org/api/process.html#process_process_arch)
  [`process:platform`](https://nodejs.org/api/process.html#process_process_platform)
