@@ -455,10 +455,12 @@ export class TemplateParser {
     }
 
     private async getOutputFilePath(): Promise<void> {
-        if (typeof this.vars['.output'] === 'string' && this.vars['.output']) {
-            this.options.output = resolve(this.fileDir, this.vars['.output']);
-        } else {
-            this.errors.push(new Error(`Ignoring functional var ".output".`));
+        if (hasVarKey(this.vars, '.output')) {
+            if (typeof this.vars['.output'] === 'string' && this.vars['.output']) {
+                this.options.output = resolve(this.fileDir, this.vars['.output']);
+            } else {
+                this.errors.push(new Error(`Ignoring functional var ".output".`));
+            }
         }
 
         if (this.options.output) {
