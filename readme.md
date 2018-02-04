@@ -53,7 +53,7 @@ Don't use like:
 
 ### Operators
 
-* `=` Assigning resource to a variable.
+* `=` `~` Assigning value to a variable.
 * `:` Accessing property value of a variable, or return value from previous action.
 * `|` Calling action (function), like piping.
 
@@ -66,15 +66,17 @@ Don't use like:
 
 ### var statement
 
-*var statement* define variables.
+*var statement* reads value, resource data or pack module, and assigns to a variable name.
 
 The following examples are using `##[` and `]##` as *comment delimiters*,
 in order to show the end of statements clearly.
 
     ##[ var var-type var-name = resource-uri ]##
+    ##[ var text a-var ~ ignoring-read-error ]
 
-Variable value comes from a resource or a value.\
 *Var-Type* tells how to parse resource. *Var-Type* is optional.
+
+Use `~` instead of `=` if you want to ignore reading error, otherwise any error while reading will break the program.
 
 ### echo statement, echo-end statement
 
@@ -246,6 +248,5 @@ Regular expression for ignoring some characters at the tail of *statement* line.
 ## TODO
 
 * Support calling local command as action.
-
 
 <!--- Reference#1 https://en.wikipedia.org/wiki/Comparison_of_programming_languages_(syntax) --->

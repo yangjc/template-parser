@@ -101,6 +101,7 @@ export class TemplateParser {
     private echoOptions: PackActionOptions[] = [];
     private vars: Vars;
     private varsReplacements: VarsReplacement[] = [];
+    private hasDeclaredOutput: boolean = false;
     
     constructor(options: Options) {
         this.filePath = resolve(options.input);
@@ -118,7 +119,7 @@ export class TemplateParser {
         // var var-type var-name = uri
         return new RegExp(
             `(?:^|${lbREP})${blankREP}*${this.cStartREP}${blankREP}*`
-            + `var${blankREP}+(?:(${varTypeREP})${blankREP}+)?([${nameREC}]+)${blankREP}*=([^${lbREC}]+)`
+            + `var${blankREP}+(?:(${varTypeREP})${blankREP}+)?([${nameREC}]+)${blankREP}*(=|~)([^${lbREC}]+)`
             + `${this.cEndREP}${blankREP}*(?=${lbREP}|$)`,
             'g'
         );
@@ -210,7 +211,8 @@ export class TemplateParser {
         while (m = regVars.exec(this.content)) {
             const varType: string = m[1];
             const varName: string = m[2];
-            const uri: string = this.inFileOptions.unescape(m[3].trim());
+            const operator: string = m[3];
+            const uri: string = this.inFileOptions.unescape(m[4].trim());
 
             let varInfo: VarInfo;
 
@@ -222,7 +224,12 @@ export class TemplateParser {
                     resourceType: 'error',
                 }
                 e.message = `Get var "${varInfo.varType} ${varName}" error.\nFrom: ${m[0]}\n${e.message}`;
-                throw e;
+                
+                if (operator === '=') {
+                    throw e;
+                } else {
+                    this.warning.push(e.stack);
+                }
             }
 
             this.info.var.push(
@@ -442,22 +449,24 @@ export class TemplateParser {
         this.vEndREP = escapeForREPattern(this.options['var-end']);
 
         if (typeof this.options.output === 'string' && this.options.output) {
+            this.hasDeclaredOutput = true;
             this.options.output = resolve(this.options.output);
         } else {
-            delete this.options.output;
+            this.options.output = this.filePath;
         }
     }
 
     private async getOutputFilePath(): Promise<void> {
         if (hasVarKey(this.vars, '.output')) {
             if (typeof this.vars['.output'] === 'string' && this.vars['.output']) {
+                this.hasDeclaredOutput = true;
                 this.options.output = resolve(this.fileDir, this.vars['.output']);
             } else {
                 this.warning.push(`Ignoring functional var ".output".`);
             }
         }
 
-        if (this.options.output) {
+        if (this.hasDeclaredOutput) {
             if (this.options.output.toLowerCase() === this.filePath.toLowerCase()) {
                 throw new Error(`Output can't override source file.`);
             }
@@ -476,7 +485,6 @@ export class TemplateParser {
 
         } else {
             this.options['keep-statements'] = true;
-            this.options.output = this.filePath;
         }
     }
 
