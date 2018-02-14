@@ -9,13 +9,13 @@ import { resolve, basename, extname } from 'path';
 export class FileResource {
 
     readonly filePath: string;
-    readonly identityType: string;
+    readonly identityType?: string;
     readonly fileType: string;
     readonly fileName: string;
     readonly fileBasename: string;
     readonly isHidden: boolean;
 
-    protected readType: string; // 读取内容的方式
+    protected readType?: string; // 读取内容的方式
 
     constructor(filePaths: string[]) {
         this.filePath = resolve(...filePaths);

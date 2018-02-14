@@ -17,7 +17,7 @@ export type List = string[];
 
 export function getList(content: string): List {
     const options: ListOptions = new InFileOptions(content).options;
-    const ignoreMark: string = options.hasOwnProperty('ignore-mark') ? options['ignore-mark'] : '#';
+    const ignoreMark: string = options.hasOwnProperty('ignore-mark') ? (options['ignore-mark'] as string) : '#';
     const removeBlankLines: boolean = !options['keep-blank-lines'];
     const keepDuplicate: boolean = options['keep-duplicate'] === true;
     const useTrim: boolean = !options['no-trim'];

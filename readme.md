@@ -11,13 +11,12 @@ All options, like *comment delimiters*, or *variable delimiters*, can be customi
 ## Install
 
     npm i @yjc/template-parser
-    cd @yjc/template-parser && npm run-script build
 
 ## Usage
 
 In CLI:
 
-    npm run-script parse file-path [--output=] [--keep-statements] [--comment-start=] [--comment-end=]
+    npm run parse file-path [--output=] [--keep-statements] [--comment-start=] [--comment-end=]
 
 ## Template Language Syntax
 
@@ -55,6 +54,7 @@ Don't use like:
 
 * `=` `~` Assigning value to a variable.
 * `:` Accessing property value of a variable, or return value from previous action.
+* `:..` Using variable value as property name.
 * `|` Calling action (function), like piping.
 
 ### Statements
@@ -72,7 +72,7 @@ The following examples are using `##[` and `]##` as *comment delimiters*,
 in order to show the end of statements clearly.
 
     ##[ var var-type var-name = resource-uri ]##
-    ##[ var text a-var ~ ignoring-read-error ]
+    ##[ var text a-var ~ ignoring-read-error ]##
 
 *Var-Type* tells how to parse resource. *Var-Type* is optional.
 

@@ -44,7 +44,7 @@ export const valueVarTypes = {
 
 export const varTypeRegExpPattern = `${Object.keys(varTypes).join('|')}|${Object.keys(valueVarTypes).join('|')}`;
 
-export function getResourceType(uri: string): string {
+export function getResourceType(uri: string): string | null {
     if (!uri || typeof uri !== 'string') {
         return null;
     }
@@ -78,7 +78,7 @@ export function getResourceType(uri: string): string {
 
 export class ResourceLoader {
 
-    readonly resourceType: string;
+    readonly resourceType: string | null;
     readonly uri: string;
     readonly varType: string;
     readonly name: string;
@@ -86,7 +86,7 @@ export class ResourceLoader {
     private _result: any;
 
     private exports: any;
-    private content: string;
+    private content?: string;
     private getters: Getters = {};
 
     constructor(uri: string, varType?: string) {
@@ -182,7 +182,7 @@ export class ResourceLoader {
     private parseJson(): void {
         try {
             this._result = JSON.parse(
-                this.content
+                (this.content as string)
                     .replace(/^\s*(?:;\s*)*(?:(?:[a-z_$][\w$]*)?\s*\()?/i, '')
                     .replace(/\)?(?:\s*;)*\s*$/, '')
             );
@@ -265,7 +265,7 @@ export class ResourceLoader {
                 break;
 
             case varTypes.list:
-                this._result = getList(this.content);
+                this._result = getList(this.content as string);
                 break;
 
             case varTypes.pack:
@@ -283,9 +283,9 @@ export class ResourceLoader {
     }
 
     private clear(): void {
-        this.content = null;
-        this.exports = null;
-        this.getters = null;
+        delete this.content;
+        delete this.exports;
+        delete this.getters;
     }
 
     public async getResult(): Promise<any> {

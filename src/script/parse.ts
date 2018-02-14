@@ -34,8 +34,8 @@ import { TemplateParser, Options } from '../lib/TemplateParser';
     console.log(`\ncli options: ${JSON.stringify(options, null, 2)}`);
 
     const parser = new TemplateParser(options);
-    let parseError: Error;
-    let outputFile: string;
+    let parseError: Error | undefined;
+    let outputFile: string | undefined;
     try {
         outputFile = await parser.parse();
     } catch (e) {

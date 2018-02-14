@@ -159,7 +159,7 @@ export class BuiltInVars implements Vars {
         'now',
         'parse',
     ]), {
-        new: wrapAction((...a: any[]): Date => new Date(...a)),
+        new: wrapAction((...a: any[]): Date => new (Date as any)(...a)),
     });
 
     constructor(options: BuiltInOptions, vars?: Vars) {

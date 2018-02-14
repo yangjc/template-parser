@@ -9,17 +9,16 @@ import { promisify } from 'util';
 import { stat, readFile, writeFile } from 'fs';
 
 import {
-    ResourceLoader, resourceTypes, varTypes, valueVarTypes, getResourceType,
+    ResourceLoader, resourceTypes, valueVarTypes, getResourceType,
     varTypeRegExpPattern as varTypeREP
 } from './ResourceLoader';
 import { PackAction, PackActionOptions } from './PackResource';
 import {
     BuiltInOptions, InFileOptions, escapeForREPattern, removeBlankTopLine, isNotStartWithLB,
     nameRegExpChars as nameREC, lineBreaksRegExpChars as lbREC,
-    blankRegExpPattern as blankREP, lineBreaksRegExpPattern as lbREP, optionsRegExpPattern as optREP
+    blankRegExpPattern as blankREP, lineBreaksRegExpPattern as lbREP
 } from './InFileOptions';
 import { Vars, BuiltInVars, hasVarKey } from './BuiltInVars';
-import { requireSync } from '../external/Require';
 
 
 export interface Options extends BuiltInOptions {
@@ -31,7 +30,7 @@ export interface Options extends BuiltInOptions {
 
 interface VarInfo {
     varType: string;
-    resourceType: string;
+    resourceType: string | null;
 }
 
 interface VarValue {
@@ -90,14 +89,14 @@ export class TemplateParser {
     };
 
     private warning: string[] = [];
-    private cStartREP: string;
-    private cEndREP: string;
-    private vStartREP: string;
-    private vEndREP: string;
+    private cStartREP: string = '';
+    private cEndREP: string = '';
+    private vStartREP: string = '';
+    private vEndREP: string = '';
 
-    private inFileOptions: InFileOptions;
-    private fileDir: string;
-    private content: string = null;
+    private inFileOptions?: InFileOptions;
+    private fileDir: string = '';
+    private content: string = '';
     private echoOptions: PackActionOptions[] = [];
     private vars: Vars;
     private varsReplacements: VarsReplacement[] = [];
@@ -151,7 +150,7 @@ export class TemplateParser {
     }
 
     private async getOneVar(varType: string, varName: string, uri: string): Promise<VarInfo> {
-        let resourceType: string;
+        let resourceType: string | null;
 
         if (functionalVarsType.hasOwnProperty(varName)) {
             if (varType && functionalVarsType[varName] !== varType) {
@@ -212,7 +211,7 @@ export class TemplateParser {
             const varType: string = m[1];
             const varName: string = m[2];
             const operator: string = m[3];
-            const uri: string = this.inFileOptions.unescape(m[4].trim());
+            const uri: string = (this.inFileOptions as InFileOptions).unescape(m[4].trim());
 
             let varInfo: VarInfo;
 
@@ -442,11 +441,11 @@ export class TemplateParser {
         this.inFileOptions = new InFileOptions(this.content, this.options);
         Object.assign(this.options, this.inFileOptions.options);
 
-        this.cStartREP = this.options['ignore-head'] + escapeForREPattern(this.options['comment-start']);
-        this.cEndREP = escapeForREPattern(this.options['comment-end']) + this.options['ignore-tail'];
+        this.cStartREP = this.options['ignore-head'] + escapeForREPattern(this.options['comment-start'] as string);
+        this.cEndREP = escapeForREPattern(this.options['comment-end'] as string) + this.options['ignore-tail'];
         
-        this.vStartREP = escapeForREPattern(this.options['var-start']);
-        this.vEndREP = escapeForREPattern(this.options['var-end']);
+        this.vStartREP = escapeForREPattern(this.options['var-start'] as string);
+        this.vEndREP = escapeForREPattern(this.options['var-end'] as string);
 
         if (typeof this.options.output === 'string' && this.options.output) {
             this.hasDeclaredOutput = true;
@@ -466,21 +465,23 @@ export class TemplateParser {
             }
         }
 
+        const output: string = this.options.output as string;
+
         if (this.hasDeclaredOutput) {
-            if (this.options.output.toLowerCase() === this.filePath.toLowerCase()) {
+            if (output.toLowerCase() === this.filePath.toLowerCase()) {
                 throw new Error(`Output can't override source file.`);
             }
 
             let s: any;
             try {
-                s = await promisify(stat)(this.options.output);
+                s = await promisify(stat)(output);
             } catch (e) {
                 if (e.code !== 'ENOENT') {
                     throw e;
                 }
             }
             if (s && !s.isFile()) {
-                throw new Error(`Output "${this.options.output}" exists but is not a file.`);
+                throw new Error(`Output "${output}" exists but is not a file.`);
             }
 
         } else {
@@ -493,7 +494,7 @@ export class TemplateParser {
             return;
         }
 
-        this.content = this.inFileOptions.removeOptions(this.content);
+        this.content = (this.inFileOptions as InFileOptions).removeOptions(this.content);
 
         let m: any;
 
@@ -516,7 +517,7 @@ export class TemplateParser {
         this.content = await promisify(readFile)(this.filePath, 'utf8');
         this.getOptions();
 
-        this.vars = new BuiltInVars(this.inFileOptions.options, this.vars);
+        this.vars = new BuiltInVars((this.inFileOptions as InFileOptions).options, this.vars);
         this.vars.options.input = this.filePath;
         this.vars.options.output = this.options.output;
 
@@ -530,9 +531,9 @@ export class TemplateParser {
 
         await this.getOutputFilePath();
         this.removeTemplateStatements();
-        await promisify(writeFile)(this.options.output, this.content, 'utf8');
+        await promisify(writeFile)(this.options.output as string, this.content, 'utf8');
 
-        return this.options.output;
+        return this.options.output as string;
     }
 
     printError(): number {

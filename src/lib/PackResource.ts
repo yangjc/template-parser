@@ -5,8 +5,8 @@
 'use strict';
 
 export interface PackActionOptions {
-    indent?: string;
-    lineBreaks?: string;
+    indent: string;
+    lineBreaks: string;
 }
 
 export interface PackAction {

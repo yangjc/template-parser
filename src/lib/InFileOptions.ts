@@ -77,14 +77,14 @@ export class InFileOptions {
         'ignore-tail': undefined,
     };
 
-    private escapeRE: RegExp = null;
-    private optionsBlockRE: RegExp = null;
-    private optionsLineRE: RegExp = null;
+    private escapeRE?: RegExp;
+    private optionsBlockRE?: RegExp;
+    private optionsLineRE?: RegExp;
     private optionsItemRE: RegExp = new RegExp(`^([${nameREC}]+)(?:=(.*))?$`);
     private firstParsingCount: number = 0;
     private isOnTop: boolean = false;
 
-    constructor(text: string, options?: BuiltInOptions) {
+    constructor(text: string, options: BuiltInOptions = {}) {
         this.initOptions(options);
         this.firstParse(text);
         if (this.firstParsingCount > 0) {
@@ -112,8 +112,11 @@ export class InFileOptions {
         this.testOptionAsREPattern('ignore-head');
         this.testOptionAsREPattern('ignore-tail');
 
-        const cStartREP: string = this.options['ignore-head'] + escapeForREPattern(this.options['comment-start']);
-        const cEndREP: string = escapeForREPattern(this.options['comment-end']) + this.options['ignore-tail'];
+        const cStartREP: string = this.options['ignore-head']
+            + escapeForREPattern(this.options['comment-start'] as string);
+
+        const cEndREP: string = escapeForREPattern(this.options['comment-end'] as string)
+            + this.options['ignore-tail'];
 
         const lineREP = `(?:^|${lbREP})${blankREP}*${cStartREP}${blankREP}*`
             + `${optStmtREP}${cEndREP}${blankREP}*(?=${lbREP}|$)`;
@@ -165,13 +168,13 @@ export class InFileOptions {
     }
 
     private getOptions(text: string): void {
-        let m: any = this.optionsBlockRE.exec(text);
+        let m: any = (this.optionsBlockRE as RegExp).exec(text);
         if (!m) {
             throw new Error(`Options conflicted with first parsing.`);
         }
         this.isOnTop = m.index === 0 && isNotStartWithLB(m[0]);
         const tBlock: string = m[0];
-        while (m = this.optionsLineRE.exec(tBlock)) {
+        while (m = (this.optionsLineRE as RegExp).exec(tBlock)) {
             const sep: string = this.unescape(m[1]);
             const items: string[] = this.unescape(m[2]).split(sep);
             for (let item of items) {
@@ -205,7 +208,7 @@ export class InFileOptions {
     }
 
     private getOptionValue(options: BuiltInOptions, name: keyof BuiltInOptions): void {
-        let value: string | boolean = options && options.hasOwnProperty(name)
+        let value: string | boolean | undefined = options && options.hasOwnProperty(name)
             ? options[name]
             : undefined;
 
@@ -242,7 +245,7 @@ export class InFileOptions {
 
     // 用户可自定义的内容，都需要反转义。
     public unescape(text: string): string {
-        if (this.escapeRE === null) {
+        if (this.escapeRE === undefined) {
             return text;
         }
         return text.replace(this.escapeRE, '$1');
