@@ -152,7 +152,7 @@ File name rule: `var-type.file-name.file-type`.
 ### Var-Type
 
 * `list` Parse plain text, return array of each line.
-* `json` Using `JSON.parse()`.
+* [`json`](https://www.json.org/) JSONP format and inline comments(start with `//`) are allowed.
 * `text` Return plain text.
 * `pack` Return Node.js module.
 * `get` Execute function and using it's return.

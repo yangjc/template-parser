@@ -1,0 +1,12 @@
+// var asText = ../resources/json-data.json
+// var json asJson = ../resources/json-data.json
+// echo
+// echo Read plain text from file:
+// echo --------------------------
+// echo {{asText}}
+// echo
+// echo -----------------------
+// echo Read and parse to json:
+// echo {{asJson|json : null number:2}}
+// echo
+// echo-end

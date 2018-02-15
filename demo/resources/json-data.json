@@ -1,0 +1,7 @@
+// Comments not allowed in json file.
+{
+    "a": 1,
+    
+    // But as resource, comments will be removed before parse to json data.
+    "b": 2
+}

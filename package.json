@@ -1,6 +1,6 @@
 {
   "name": "@yjc/template-parser",
-  "version": "1.2.12",
+  "version": "1.2.13",
   "description": "A template parser for any type of file, using a very simple template language.",
   "devDependencies": {
     "@types/node": "",

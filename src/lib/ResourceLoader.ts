@@ -183,6 +183,7 @@ export class ResourceLoader {
         try {
             this._result = JSON.parse(
                 (this.content as string)
+                    .replace(/(?:^|\r?\n|\r)\s*\/\/[^\r\n]*/g, '')
                     .replace(/^\s*(?:;\s*)*(?:(?:[a-z_$][\w$]*)?\s*\()?/i, '')
                     .replace(/\)?(?:\s*;)*\s*$/, '')
             );
