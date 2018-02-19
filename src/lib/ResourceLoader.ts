@@ -1,12 +1,12 @@
 /**
- * YJC <yangjiecong@live.com>
+ * YJC <https://github.com/yangjc>
  */
 
 'use strict';
 
 import { basename } from 'path';
 import { FileResource } from './FileResource';
-import { requireSync } from '../external/Require';
+import { requireSync } from '../external/external-require';
 import { promisify } from 'util';
 import { readFile, stat } from 'fs';
 import { getList } from '../parser/List';

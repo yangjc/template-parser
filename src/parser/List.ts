@@ -1,12 +1,12 @@
 /**
- * YJC <yangjiecong@live.com>
+ * YJC <https://github.com/yangjc>
  */
 
 'use strict';
 
-import { InFileOptions, BuiltInOptions } from '../lib/InFileOptions';
+import { InFileOptions, BaseOptions } from '../lib/InFileOptions';
 
-export interface ListOptions extends BuiltInOptions {
+export interface ListOptions extends BaseOptions {
     'ignore-mark'?: string;
     'keep-blank-lines'?: boolean;
     'keep-duplicate'?: boolean;

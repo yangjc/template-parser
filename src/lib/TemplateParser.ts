@@ -1,5 +1,5 @@
 /**
- * YJC <yangjiecong@live.com>
+ * YJC <https://github.com/yangjc>
  */
 
 'use strict';
@@ -7,6 +7,8 @@
 import { resolve, dirname } from 'path';
 import { promisify } from 'util';
 import { stat, readFile, writeFile } from 'fs';
+import { createHash } from 'crypto';
+import { fileHash } from '@yjc/util/file-hash';
 
 import {
     ResourceLoader, resourceTypes, valueVarTypes, getResourceType,
@@ -366,6 +368,10 @@ export class TemplateParser {
     }
 
     private async updateVarsReplacements(): Promise<void> {
+        if (this.options['no-echo'] === true) {
+            return;
+        }
+
         for (let item of this.varsReplacements) {
             const v: VarValue = await this.getVarValue(
                 item.text, item.expression, this.echoOptions[item.echoIndex], true
@@ -400,6 +406,11 @@ export class TemplateParser {
             const indent: string = $2;
             const tEnd: string = $4;
             const lineBreaks: string = $5;
+
+            if (this.options['no-echo'] === true) {
+                return `${tVarLines}${tEnd}`;
+            }
+
             const index: number = this.info.echo.length;
             const echoInfo: EchoBlockInfo = {
                 lines: 0,
@@ -511,6 +522,24 @@ export class TemplateParser {
         }
     }
 
+    private async output(output: string): Promise<number> {
+        const hash = createHash('sha512');
+        hash.update(this.content);
+        try {
+            if (hash.digest('hex') === await fileHash(output, 'sha512')) {
+                return 0;
+            }
+        } catch (e) {
+            if (e.code !== 'ENOENT') {
+                this.warning.push(`Compare output hash error.\n${e.stack}`);
+            }
+        }
+
+        await promisify(writeFile)(output, this.content, 'utf8');
+
+        return 1;
+    }
+
     async parse(): Promise<string> {
         await this.testFilePath();
 
@@ -531,9 +560,10 @@ export class TemplateParser {
 
         await this.getOutputFilePath();
         this.removeTemplateStatements();
-        await promisify(writeFile)(this.options.output as string, this.content, 'utf8');
 
-        return this.options.output as string;
+        return (await this.output(this.options.output as string)) === 0
+            ? 'Same output exists, do nothing.'
+            : 'Output written.';
     }
 
     printError(): number {

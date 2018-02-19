@@ -1,16 +1,17 @@
 {
   "name": "@yjc/template-parser",
-  "version": "1.2.13",
+  "version": "1.2.15",
   "description": "A template parser for any type of file, using a very simple template language.",
   "devDependencies": {
     "@types/node": "",
     "@types/minimist": ""
   },
   "dependencies": {
+    "@yjc/util": "",
     "minimist": ""
   },
   "scripts": {
-    "prepublishOnly": "tsc -p src",
+    "prepublishOnly": "rm -rf release && tsc -p src",
     "parse": "node release/script/parse.js"
   },
   "main": "./release/main.js",
@@ -23,7 +24,7 @@
     "template",
     "parser"
   ],
-  "author": "YJC <yangjiecong@live.com>",
+  "author": "YJC",
   "bugs": {
     "url": "https://github.com/yangjc/template-parser/issues"
   },

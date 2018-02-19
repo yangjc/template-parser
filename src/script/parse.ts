@@ -1,5 +1,5 @@
 /**
- * YJC <yangjiecong@live.com>
+ * YJC <https://github.com/yangjc>
  */
 
 'use strict';
@@ -8,11 +8,14 @@ import { resolve } from 'path';
 import * as minimist from 'minimist';
 import { TemplateParser, Options } from '../lib/TemplateParser';
 
-(async () => {
+export { TemplateParser };
+
+process.mainModule && process.mainModule.filename === __filename && (async () => {
     const argv: minimist.ParsedArgs = minimist(process.argv.slice(2));
     const file: string = argv._[0];
+
     if (!file) {
-        return console.log(
+        console.log(
             `Usage
     node parse.js file-path [--%s=] [--%s] [--%s=] [--%s=]`,
             'output',
@@ -20,6 +23,8 @@ import { TemplateParser, Options } from '../lib/TemplateParser';
             'comment-start',
             'comment-end'
         );
+        process.exit(1);
+        return;
     }
 
     const options: Options = {
@@ -35,9 +40,9 @@ import { TemplateParser, Options } from '../lib/TemplateParser';
 
     const parser = new TemplateParser(options);
     let parseError: Error | undefined;
-    let outputFile: string | undefined;
+    let message: string | undefined;
     try {
-        outputFile = await parser.parse();
+        message = await parser.parse();
     } catch (e) {
         parseError = e;
     }
@@ -49,6 +54,12 @@ import { TemplateParser, Options } from '../lib/TemplateParser';
         console.error(`\nparse error:\n\n${parseError.message}\n`);
         console.error(parseError);
     } else {
-        console.log(`\noutput: ${outputFile}`);
+        console.log(`\nmessage: ${message}`);
     }
-})().catch(console.error);
+
+    process.exit(parseError ? 2 : 0);
+    
+})().catch(e => {
+    console.error(e);
+    process.exit(3);
+});

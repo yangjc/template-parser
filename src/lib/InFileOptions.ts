@@ -1,17 +1,21 @@
 /**
- * YJC <yangjiecong@live.com>
+ * YJC <https://github.com/yangjc>
  */
 
 'use strict';
 
-export interface BuiltInOptions {
+export interface BaseOptions {
     'comment-start'?: string;
     'comment-end'?: string;
-    'var-start'?: string;
-    'var-end'?: string;
     'ignore-head'?: string;
     'ignore-tail'?: string;
     'escape'?: string;
+}
+
+export interface BuiltInOptions extends BaseOptions {
+    'var-start'?: string;
+    'var-end'?: string;
+    'no-echo'?: boolean;
 }
 
 export const optionsRegExpPattern: string = '\\.options';
@@ -29,6 +33,7 @@ export const builtInOptions: BuiltInOptions = {
     'ignore-head': '',
     'ignore-tail': '',
     'escape': undefined,
+    'no-echo': undefined,
 };
 
 export function isOptionValue(value: any) {
@@ -150,8 +155,8 @@ export class InFileOptions {
         for (let item of items) {
             if (item) {
                 const m: any = this.optionsItemRE.exec(item);
+                m && this.firstParsingCount++;
                 if (m && m[2] !== undefined && this.options.hasOwnProperty(m[1])) {
-                    this.firstParsingCount++;
                     const optionName: keyof BuiltInOptions = m[1];
                     const optionValue: string = m[2];
                     

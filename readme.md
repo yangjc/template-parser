@@ -244,9 +244,12 @@ Regular expression for ignoring some characters at the tail of *statement* line.
 
 * `var-start` Default: `{{`. The delimiter for variable start.
 * `var-end` Default: `}}`. The delimiter for variable end.
+* `no-echo` Default: (undefined). Remove all echo content.
 
 ## TODO
 
 * Support calling local command as action.
+
+
 
 <!--- Reference#1 https://en.wikipedia.org/wiki/Comparison_of_programming_languages_(syntax) --->

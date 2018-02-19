@@ -1,5 +1,5 @@
 /**
- * YJC <yangjiecong@live.com>
+ * YJC <https://github.com/yangjc>
  */
 
 export * from './src/main';
