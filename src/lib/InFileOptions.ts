@@ -71,16 +71,17 @@ const blankREP: string = blankRegExpPattern;
 const sepCharREP: string = `[^${nameREC}${lbREC}]`;
 const optStmtREP: string = `${optREP}(${sepCharREP}+)([^${lbREC}]+)`;
 
+const firstLineOptions: (keyof BuiltInOptions)[] = [
+    'comment-start',
+    'comment-end',
+    'escape',
+    'ignore-head',
+    'ignore-tail',
+];
+
 export class InFileOptions {
 
-    // 声明需要在第一次解析使用的配置名
-    readonly options: BuiltInOptions = {
-        'comment-start': undefined,
-        'comment-end': undefined,
-        'escape': undefined,
-        'ignore-head': undefined,
-        'ignore-tail': undefined,
-    };
+    readonly options: BuiltInOptions = {};
 
     private escapeRE?: RegExp;
     private optionsBlockRE?: RegExp;
@@ -106,7 +107,7 @@ export class InFileOptions {
             return;
         }
         try {
-            new RegExp(<string>this.options[optionName]);
+            new RegExp(this.options[optionName] as string);
         } catch (e) {
             e.message = `Regular expression for option "${optionName}" error.\n${e.message}`;
             throw e;
@@ -156,7 +157,7 @@ export class InFileOptions {
             if (item) {
                 const m: any = this.optionsItemRE.exec(item);
                 m && this.firstParsingCount++;
-                if (m && m[2] !== undefined && this.options.hasOwnProperty(m[1])) {
+                if (m && m[2] !== undefined && firstLineOptions.indexOf(m[1]) > -1) {
                     const optionName: keyof BuiltInOptions = m[1];
                     const optionValue: string = m[2];
                     
@@ -192,8 +193,8 @@ export class InFileOptions {
                         if (optionName === 'escape' && typeof optionValue === 'string') {
                             optionValue = optionValue[0];
                         }
-
-                        if (this.options.hasOwnProperty(optionName)) {
+                        
+                        if (firstLineOptions.indexOf(optionName) > -1) {
                             if (this.options[optionName] !== optionValue) {
                                 throw new Error(`Option conflicted with first parsing.\n`
                                     + `First parsed count: ${this.firstParsingCount}\n`
@@ -203,7 +204,7 @@ export class InFileOptions {
                             }
 
                         } else {
-                            this.options[optionName] = <string>optionValue;
+                            this.options[optionName] = optionValue as string;
                         }
                     }
                 }
@@ -213,7 +214,7 @@ export class InFileOptions {
     }
 
     private getOptionValue(options: BuiltInOptions, name: keyof BuiltInOptions): void {
-        let value: string | boolean | undefined = options && options.hasOwnProperty(name)
+        let value: string | boolean | undefined = options && Object.prototype.hasOwnProperty.call(options, name)
             ? options[name]
             : undefined;
 
@@ -223,17 +224,17 @@ export class InFileOptions {
     }
 
     private initOptions(options: BuiltInOptions): void {
-        for (let name in this.options) {
-            if (this.options.hasOwnProperty(name)) {
-                this.getOptionValue(options, <keyof BuiltInOptions>name);
+        for (let name of firstLineOptions) {
+            if (builtInOptions.hasOwnProperty(name)) {
+                this.options[name] = builtInOptions[name];
             }
         }
     }
 
     private setOtherOptions(options: BuiltInOptions): void {
         for (let name in builtInOptions) {
-            if (builtInOptions.hasOwnProperty(name) && !this.options.hasOwnProperty(name)) {
-                this.getOptionValue(options, <keyof BuiltInOptions>name);
+            if (builtInOptions.hasOwnProperty(name) && !Object.prototype.hasOwnProperty.call(this.options, name)) {
+                this.getOptionValue(options, name as keyof BuiltInOptions);
             }
         }
     }
