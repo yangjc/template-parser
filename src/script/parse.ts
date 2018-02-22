@@ -11,8 +11,8 @@ import { TemplateParser, Options } from '../lib/TemplateParser';
 export { TemplateParser };
 
 process.mainModule && process.mainModule.filename === __filename && (async () => {
-    const argv: minimist.ParsedArgs = minimist(process.argv.slice(2));
-    const file: string = argv._[0];
+    const { _, ...argv } = minimist(process.argv.slice(2));
+    const file: string = _[0];
 
     if (!file) {
         console.log(
@@ -27,13 +27,9 @@ process.mainModule && process.mainModule.filename === __filename && (async () =>
         return;
     }
 
-    const options: Options = {
+    const options: Options = Object.assign({
         'input': resolve(process.cwd(), file),
-        'comment-start': argv['comment-start'],
-        'comment-end': argv['comment-end'],
-        'output': argv['output'],
-        'keep-statements': argv['keep-statements'],
-    };
+    }, argv);
     // options.commentStart = '//\t';
     // options.commentEnd = '';
     console.log(`\ncli options: ${JSON.stringify(options, null, 2)}`);
