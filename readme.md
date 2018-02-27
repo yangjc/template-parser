@@ -1,12 +1,16 @@
 # template-parser
 
-A template parser for any type of file.
+## What for?
 
-Write the *template statements* in contents where can be ignored, like comments.\
+This is a template parser, which is designed for the following uses:
+
+1. Generate code based on code.
+1. Update a configuration file that contains replaceable variables.
+1. Update any file that contains replaceable variables.
+
+For any type of file, you can write the *template statements* in contents where can be ignored, like comments.\
 Template parser will replace all variables in *Statements*.\
 *Statements* will be kept if updating file itself, and will be removed if writing to another file.
-
-All options, like *comment delimiters*, or *variable delimiters*, can be customized.
 
 ## Install
 
@@ -101,7 +105,7 @@ In this case, "line 3" will be rewritten, because "line 3" is separated by blank
 
 ### Variable Expression
 
-Variables in *echo statement* or *resource uri* will be replace by their values.\
+Variables in *echo statement* or *resource uri* will be replaced by their values.\
 Variables are wrapped by *variable delimiters*.
 
     ##[ var string a = Path: {{ process:env:path }} {{ another-var }} ]##
@@ -125,6 +129,8 @@ Use a single `:` to access the return value of previous action.
 1. Use `..` before a key to access variable as a property name.
 
 ### options statement
+
+*options statements* define customized options.
 
     ##[ .options comment-start=##[ comment-end=]## ]##
     ##[ .options::name=value::other=::boolean-option]##
@@ -244,12 +250,10 @@ Regular expression for ignoring some characters at the tail of *statement* line.
 
 * `var-start` Default: `{{`. The delimiter for variable start.
 * `var-end` Default: `}}`. The delimiter for variable end.
-* `no-echo` Default: (undefined). Remove all echo content.
+* `no-echo` Default: (undefined). If true, remove all contents between *echo statement* and *echo-end statement*.
 
 ## TODO
 
 * Support calling local command as action.
-
-
 
 <!--- Reference#1 https://en.wikipedia.org/wiki/Comparison_of_programming_languages_(syntax) --->
