@@ -12,7 +12,8 @@ import { fileHash } from '@yjc/util/file-hash';
 
 import {
     ResourceLoader, resourceTypes, valueVarTypes, getResourceType,
-    varTypeRegExpPattern as varTypeREP
+    varTypeRegExpPattern as varTypeREP,
+    varTypes
 } from './ResourceLoader';
 import { PackAction, PackActionOptions } from './PackResource';
 import {
@@ -59,14 +60,25 @@ interface ActionWithArgs {
     args: any[];
 }
 
+interface FunctionalVarInfo {
+    varType: string;
+    example: string;
+}
+
 export interface Info {
     var: string[];
     echo: EchoBlockInfo[];
 }
 
-export const functionalVarsType: {[varName: string]: string} = {
-    '.output': 'string',
-    '.ignore': 'value',
+export const functionalVarsInfo: {[varName: string]: FunctionalVarInfo} = {
+    '.output': {
+        varType: 'string',
+        example: 'var fn .output = output-file-path',
+    },
+    '.ignore': {
+        varType: 'value',
+        example: 'var fn .ignore = true',
+    },
 };
 
 const NO_ARG: Symbol = Symbol();
@@ -154,11 +166,12 @@ export class TemplateParser {
     private async getOneVar(varType: string, varName: string, uri: string): Promise<VarInfo> {
         let resourceType: string | null;
 
-        if (functionalVarsType.hasOwnProperty(varName)) {
-            if (varType && functionalVarsType[varName] !== varType) {
-                this.warning.push(`Functional variable "${varName}" should be "${functionalVarsType[varName]}".`);
+        if (functionalVarsInfo.hasOwnProperty(varName)) {
+            if (varType !== varTypes.fn) {
+                throw new Error(`"${varName}" is a functional variable,`
+                    + ` should use like "${functionalVarsInfo[varName].example}".`);
             }
-            varType = functionalVarsType[varName];
+            varType = functionalVarsInfo[varName].varType;
         }
 
         if (varType === valueVarTypes.value) {

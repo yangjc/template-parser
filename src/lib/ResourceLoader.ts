@@ -26,6 +26,7 @@ export const varTypes = {
     pack: 'pack',
     get: 'get',
     stat: 'stat',
+    fn: 'fn',
 };
 
 export const defaultVarType: string = varTypes.text;

@@ -8,8 +8,8 @@ This is a template parser, which is designed for the following uses:
 1. Update a configuration file that contains replaceable variables.
 1. Update any file that contains replaceable variables.
 
-For any type of file, you can write the *template statements* in contents where can be ignored, like comments.\
-Template parser will replace all variables in *Statements*.\
+For any type of file, you can write the *template statements* in contents where can be ignored, like comments.  
+Template parser will replace all variables in *Statements*.  
 *Statements* will be kept if updating file itself, and will be removed if writing to another file.
 
 ## Install
@@ -84,7 +84,7 @@ Use `~` instead of `=` if you want to ignore reading error, otherwise any error 
 
 ### echo statement, echo-end statement
 
-Continuous *echo statements* print lines with variables.\
+Continuous *echo statements* print lines with variables.  
 *echo-end statement* tells the end of replacement block.
 
     ##[ echo line]##
@@ -105,7 +105,7 @@ In this case, "line 3" will be rewritten, because "line 3" is separated by blank
 
 ### Variable Expression
 
-Variables in *echo statement* or *resource uri* will be replaced by their values.\
+Variables in *echo statement* or *resource uri* will be replaced by their values.  
 Variables are wrapped by *variable delimiters*.
 
     ##[ var string a = Path: {{ process:env:path }} {{ another-var }} ]##
@@ -166,8 +166,9 @@ File name rule: `var-type.file-name.file-type`.
 * `value` Variable expression without delimiters.
 * `number` Will be converted to number.
 * `string` Same as what you write.
+* `fn` For functional variables.
 
-`http`/`https` resources using `text` by default, and `pack`/`get` is not available.\
+`http`/`https` resources using `text` by default, and `pack`/`get` is not available.  
 For Local file resource, all types are available.
 
 If *var-type* not declared, get *var-type* from file name, otherwise use `text`.
@@ -221,6 +222,8 @@ Check `demo/resources/pack.*.js` for examples.
  [`Date:now`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/now)
 
 ### Functional Variables
+
+Declare a functional variable: `var fn .var-name = ...` .
 
 * `.output` Declare output file.
 * `.ignore` If `true`, do nothing.
